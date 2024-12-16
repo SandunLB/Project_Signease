@@ -4,7 +4,7 @@ include 'sidebar.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login_register.html");
+    header("Location: login_register.php");
     exit();
 }
 
@@ -49,9 +49,31 @@ function getStatusClass($status) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Activity Log - SignEase</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        // Add any custom colors here
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900">
+<body class="bg-gray-100 dark:bg-gray-900" x-data="{ darkMode: false }" x-init="
+    if (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        localStorage.setItem('darkMode', JSON.stringify(true));
+    }
+    darkMode = JSON.parse(localStorage.getItem('darkMode'));
+    $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(value)))
+" x-bind:class="{'dark': darkMode === true}">
     <div class="p-4 sm:ml-64">
         <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
             <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Activity Log</h1>
@@ -75,7 +97,7 @@ function getStatusClass($status) {
                                 data-status="<?php echo htmlspecialchars($row['status']); ?>">
                                 <td class="py-4 px-6">
                                     <?php echo htmlspecialchars($row['recipient_name']); ?><br>
-                                    <span class="text-xs text-gray-500"><?php echo htmlspecialchars($row['recipient_email']); ?></span>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400"><?php echo htmlspecialchars($row['recipient_email']); ?></span>
                                 </td>
                                 <td class="py-4 px-6">
                                     <?php
@@ -87,7 +109,7 @@ function getStatusClass($status) {
                                         $doc_name = basename($row['file_path']);
                                     }
                                     ?>
-                                    <a href="<?php echo htmlspecialchars($doc_link); ?>" target="_blank" class="text-blue-600 hover:underline" onclick="event.stopPropagation();"><?php echo htmlspecialchars($doc_name); ?></a>
+                                    <a href="<?php echo htmlspecialchars($doc_link); ?>" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline" onclick="event.stopPropagation();"><?php echo htmlspecialchars($doc_name); ?></a>
                                 </td>
                                 <td class="py-4 px-6">
                                     <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo getStatusClass($row['status']); ?>">
@@ -106,17 +128,17 @@ function getStatusClass($status) {
     <!-- Modal -->
     <div id="documentModal" class="fixed z-10 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity dark:bg-gray-900 dark:bg-opacity-75" aria-hidden="true"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full dark:bg-gray-800">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 dark:bg-gray-800">
                     <div class="sm:flex sm:items-start">
                         <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
                                 Document Details
                             </h3>
                             <div class="mt-2">
-                                <p class="text-sm text-gray-500" id="modal-content"></p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400" id="modal-content"></p>
                             </div>
                             <div class="mt-4">
                                 <div class="flex items-center justify-between w-full" id="status-flow">
@@ -126,8 +148,8 @@ function getStatusClass($status) {
                         </div>
                     </div>
                 </div>
-                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                    <button type="button" class="close-modal mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse dark:bg-gray-700">
+                    <button type="button" class="close-modal mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm dark:bg-gray-600 dark:text-white dark:border-gray-500 dark:hover:bg-gray-700">
                         Close
                     </button>
                 </div>
@@ -161,8 +183,8 @@ function getStatusClass($status) {
                         status: this.getAttribute('data-status')
                     };
                     modalContent.innerHTML = `
-                        <p><strong>Requirements:</strong> ${docDetails.requirements}</p>
-                        <p><strong>Description:</strong> ${docDetails.description}</p>
+                        <p class="dark:text-gray-300"><strong>Requirements:</strong> ${docDetails.requirements}</p>
+                        <p class="dark:text-gray-300"><strong>Description:</strong> ${docDetails.description}</p>
                     `;
                     updateStatusFlow(docDetails.status);
                     modal.classList.remove('hidden');
@@ -177,18 +199,19 @@ function getStatusClass($status) {
                 statusFlow.innerHTML = '';
                 statuses.forEach((status, index) => {
                     const statusElement = document.createElement('div');
-                    statusElement.className = `w-auto px-2 py-1 rounded-full flex items-center justify-center text-white text-xs font-bold ${status === currentStatus ? statusColors[status] : 'bg-gray-300'}`;
+                    statusElement.className = `w-auto px-2 py-1 rounded-full flex items-center justify-center text-white text-xs font-bold ${status === currentStatus ? statusColors[status] : 'bg-gray-300 dark:bg-gray-600'}`;
                     statusElement.textContent = status.charAt(0).toUpperCase() + status.slice(1);
                     statusFlow.appendChild(statusElement);
 
                     if (index < statuses.length - 1) {
                         const lineElement = document.createElement('div');
-                        lineElement.className = 'flex-grow h-1 bg-gray-300';
+                        lineElement.className = 'flex-grow h-1 bg-gray-300 dark:bg-gray-600';
                         statusFlow.appendChild(lineElement);
                     }
                 });
             }
         });
     </script>
+    <script src="theme.js"></script>
 </body>
 </html>

@@ -4,7 +4,7 @@ include 'sidebar.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login_register.html");
+    header("Location: login_register.php");
     exit();
 }
 
@@ -30,6 +30,18 @@ $result = $stmt->get_result();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recipient Documents - SignEase</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        // Add any custom colors here
+                    }
+                }
+            }
+        }
+    </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 dark:bg-gray-900">
@@ -55,15 +67,15 @@ $result = $stmt->get_result();
                                 <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
                                     <td class="py-4 px-6">
                                         <?php echo htmlspecialchars($row['sender_name']); ?><br>
-                                        <span class="text-xs text-gray-500"><?php echo htmlspecialchars($row['sender_email']); ?></span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400"><?php echo htmlspecialchars($row['sender_email']); ?></span>
                                     </td>
                                     <td class="py-4 px-6">
                                         <?php
                                         if (!empty($row['drive_link'])) {
-                                            echo '<a href="' . htmlspecialchars($row['drive_link']) . '" target="_blank" class="text-blue-600 hover:underline">View on Google Drive</a>';
+                                            echo '<a href="' . htmlspecialchars($row['drive_link']) . '" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">View on Google Drive</a>';
                                         } else {
                                             $file_name = basename($row['file_path']);
-                                            echo '<a href="' . htmlspecialchars($row['file_path']) . '" target="_blank" class="text-blue-600 hover:underline">' . htmlspecialchars($file_name) . '</a>';
+                                            echo '<a href="' . htmlspecialchars($row['file_path']) . '" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">' . htmlspecialchars($file_name) . '</a>';
                                         }
                                         ?>
                                     </td>
@@ -74,16 +86,16 @@ $result = $stmt->get_result();
                                             <?php
                                             switch ($row['status']) {
                                                 case 'sent':
-                                                    echo 'bg-yellow-100 text-yellow-800';
+                                                    echo 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100';
                                                     break;
                                                 case 'signed':
-                                                    echo 'bg-green-100 text-green-800';
+                                                    echo 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100';
                                                     break;
                                                 case 'pending':
-                                                    echo 'bg-blue-100 text-blue-800';
+                                                    echo 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100';
                                                     break;
                                                 default:
-                                                    echo 'bg-gray-100 text-gray-800';
+                                                    echo 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
                                             }
                                             ?>">
                                             <?php echo ucfirst(htmlspecialchars($row['status'])); ?>
@@ -96,8 +108,8 @@ $result = $stmt->get_result();
                                             class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
                                                 Sign
                                             </a>
-                                                                                    <?php else: ?>
-                                            <span class="text-gray-500">Signed</span>
+                                        <?php else: ?>
+                                            <span class="text-gray-500 dark:text-gray-400">Signed</span>
                                         <?php endif; ?>
                                     </td>
                                 </tr>
@@ -112,23 +124,24 @@ $result = $stmt->get_result();
     </div>
     <script>
         function handleSignClick(documentPath) {
-    try {
-        // Create URL to the document editor page, considering the signeasex root folder
-        const signerUrl = new URL(window.location.pathname, window.location.origin);
-        // Replace the current PHP file with the path to doc_editor/index.html
-        const editorPath = signerUrl.pathname.replace('recipient_documents.php', 'doc_editor/index.html');
-        const finalUrl = new URL(editorPath, window.location.origin);
-        
-        // Store the document path in sessionStorage
-        sessionStorage.setItem('documentToSign', documentPath);
-        
-        // Navigate to the signer page
-        window.location.href = finalUrl.toString();
-    } catch (error) {
-        console.error('Error handling sign click:', error);
-        alert('Error opening document signer. Please try again.');
-    }
-}
+            try {
+                // Create URL to the document editor page, considering the signeasex root folder
+                const signerUrl = new URL(window.location.pathname, window.location.origin);
+                // Replace the current PHP file with the path to doc_editor/index.html
+                const editorPath = signerUrl.pathname.replace('recipient_documents.php', 'doc_editor/index.html');
+                const finalUrl = new URL(editorPath, window.location.origin);
+                
+                // Store the document path in sessionStorage
+                sessionStorage.setItem('documentToSign', documentPath);
+                
+                // Navigate to the signer page
+                window.location.href = finalUrl.toString();
+            } catch (error) {
+                console.error('Error handling sign click:', error);
+                alert('Error opening document signer. Please try again.');
+            }
+        }
     </script>
+    <script src="theme.js"></script>
 </body>
 </html>

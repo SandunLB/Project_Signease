@@ -4,7 +4,7 @@ include 'sidebar.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login_register.html");
+    header("Location: login_register.php");
     exit();
 }
 
@@ -142,6 +142,18 @@ $stmt->close();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document Upload - SignEase</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        // Add any custom colors here
+                    }
+                }
+            }
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
@@ -154,7 +166,7 @@ $stmt->close();
             <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Document Upload</h1>
             
             <div x-show="message" x-cloak
-                 x-bind:class="{'bg-green-100 text-green-800': message.includes('Success'), 'bg-red-100 text-red-800': message.includes('Error')}"
+                 x-bind:class="{'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100': message.includes('Success'), 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100': message.includes('Error')}"
                  class="mb-6 p-4 rounded-md text-sm font-medium">
                 <p x-text="message"></p>
             </div>
@@ -163,7 +175,7 @@ $stmt->close();
                 <div>
                     <label for="upload_method" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Upload Method</label>
                     <select id="upload_method" name="upload_method" x-model="uploadMethod"
-                            class="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            class="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-white">
                         <option value="local">Local File</option>
                         <option value="drive">Google Drive Link</option>
                     </select>
@@ -190,22 +202,42 @@ $stmt->close();
                 <div>
                     <label for="recipient" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Select Recipient</label>
                     <select id="recipient" name="recipient" required
-                            class="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                            class="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-white">
                         <option value="">Choose a recipient</option>
                         <?php echo $recipient_options; ?>
                     </select>
                 </div>
 
                 <div>
-                    <p class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">Select Requirements</p>
-                    <div class="space-y-2">
+                    <p class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-4">Select Requirements</p>
+                    <div class="flex flex-wrap gap-8 items-center">
                         <?php
                         $requirements = ['signature' => 'Signature', 'stamp' => 'Stamp', 'date_time' => 'Date & Time', 'text' => 'Text'];
                         foreach ($requirements as $value => $label) {
-                            echo "<label class='inline-flex items-center'>
-                                    <input type='checkbox' name='requirements[]' value='$value' class='rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600'>
-                                    <span class='ml-2 text-sm text-gray-700 dark:text-gray-200'>$label</span>
-                                  </label>";
+                            echo "<label class='inline-flex items-center group cursor-pointer'>
+                                    <div class='relative'>
+                                        <input type='checkbox' 
+                                            name='requirements[]' 
+                                            value='$value' 
+                                            class='peer sr-only'>
+                                        <div class='w-5 h-5 bg-white border-2 border-gray-300 rounded-md transition-all duration-300 
+                                                peer-checked:bg-indigo-600 peer-checked:border-indigo-600 
+                                                hover:border-indigo-500 dark:bg-gray-700 dark:border-gray-600
+                                                dark:peer-checked:bg-indigo-500 dark:peer-checked:border-indigo-500 
+                                                dark:hover:border-indigo-400'>
+                                            <svg class='w-3 h-3 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-0 text-white 
+                                                    transition-opacity duration-300 peer-checked:opacity-100' 
+                                                fill='none' 
+                                                viewBox='0 0 24 24' 
+                                                stroke='currentColor' 
+                                                stroke-width='3'>
+                                                <path d='M5 13l4 4L19 7'/>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <span class='ml-3 text-sm text-gray-700 dark:text-gray-200 transition-colors duration-200 
+                                            group-hover:text-indigo-600 dark:group-hover:text-indigo-400'>$label</span>
+                                </label>";
                         }
                         ?>
                     </div>
@@ -232,5 +264,6 @@ $stmt->close();
             </form>
         </div>
     </div>
+    <script src="theme.js"></script>
 </body>
 </html>
