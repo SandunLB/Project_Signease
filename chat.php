@@ -43,28 +43,58 @@ function getMessages($conn, $conversationId) {
     return $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 }
 
-// Handle new message submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'send_message') {
-    $receiverEmail = $_POST['receiver_email'];
-    $message = $_POST['message'];
-
-    $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
-    $stmt->bind_param("s", $receiverEmail);
+// Function to get user details
+function getUserDetails($conn, $userId) {
+    $stmt = $conn->prepare("SELECT name, email FROM users WHERE id = ?");
+    $stmt->bind_param("i", $userId);
     $stmt->execute();
     $result = $stmt->get_result();
-    $receiver = $result->fetch_assoc();
+    return $result->fetch_assoc();
+}
 
-    if ($receiver) {
-        $conversationId = getOrCreateConversation($conn, $_SESSION['user_id'], $receiver['id']);
-        $stmt = $conn->prepare("INSERT INTO messages (conversation_id, sender_id, receiver_id, message) VALUES (?, ?, ?, ?)");
-        $stmt->bind_param("iiis", $conversationId, $_SESSION['user_id'], $receiver['id'], $message);
+// Handle new message submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    if ($_POST['action'] === 'send_message') {
+        $receiverEmail = $_POST['receiver_email'];
+        $message = $_POST['message'];
+
+        $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+        $stmt->bind_param("s", $receiverEmail);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $receiver = $result->fetch_assoc();
+
+        if ($receiver) {
+            $conversationId = getOrCreateConversation($conn, $_SESSION['user_id'], $receiver['id']);
+            $stmt = $conn->prepare("INSERT INTO messages (conversation_id, sender_id, receiver_id, message) VALUES (?, ?, ?, ?)");
+            $stmt->bind_param("iiis", $conversationId, $_SESSION['user_id'], $receiver['id'], $message);
+            $stmt->execute();
+
+            $stmt = $conn->prepare("UPDATE conversations SET last_message_at = NOW() WHERE id = ?");
+            $stmt->bind_param("i", $conversationId);
+            $stmt->execute();
+
+            header("Location: chat.php?conversation_id=" . $conversationId);
+            exit();
+        }
+    } elseif ($_POST['action'] === 'edit_message') {
+        $messageId = $_POST['message_id'];
+        $newMessage = $_POST['new_message'];
+
+        $stmt = $conn->prepare("UPDATE messages SET message = ? WHERE id = ? AND sender_id = ?");
+        $stmt->bind_param("sii", $newMessage, $messageId, $_SESSION['user_id']);
         $stmt->execute();
 
-        $stmt = $conn->prepare("UPDATE conversations SET last_message_at = NOW() WHERE id = ?");
-        $stmt->bind_param("i", $conversationId);
+        header("Location: " . $_SERVER['HTTP_REFERER']);
+        exit();
+    } elseif ($_POST['action'] === 'delete_message') {
+        $messageId = $_POST['message_id'];
+
+        $stmt = $conn->prepare("DELETE FROM messages WHERE id = ? AND sender_id = ?");
+        $stmt->bind_param("ii", $messageId, $_SESSION['user_id']);
         $stmt->execute();
 
-        header("Location: chat.php?conversation_id=" . $conversationId);
+        header("Location: " . $_SERVER['HTTP_REFERER']);
         exit();
     }
 }
@@ -72,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 $conversations = getUserConversations($conn, $_SESSION['user_id']);
 $activeConversationId = $_GET['conversation_id'] ?? null;
 $messages = $activeConversationId ? getMessages($conn, $activeConversationId) : [];
+$userDetails = getUserDetails($conn, $_SESSION['user_id']);
 
 // Mark messages as read
 if ($activeConversationId) {
@@ -88,6 +119,7 @@ if ($activeConversationId) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WhatsApp-like Chat System</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body class="bg-gray-100">
     <div class="container mx-auto p-4">
@@ -114,12 +146,27 @@ if ($activeConversationId) {
 
                 <!-- Chat Area -->
                 <div class="w-2/3 flex flex-col">
+                    <!-- Chat Header -->
+                    <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-lg font-semibold"><?= htmlspecialchars($userDetails['name']) ?></h2>
+                            <p class="text-sm text-gray-600"><?= htmlspecialchars($userDetails['email']) ?></p>
+                        </div>
+                        <button onclick="location.href='logout.php'" class="bg-red-500 text-white px-4 py-2 rounded">Logout</button>
+                    </div>
+
                     <?php if ($activeConversationId): ?>
                         <div class="flex-1 overflow-y-auto p-4">
                             <?php foreach ($messages as $message): ?>
-                                <div class="mb-4 <?= $message['sender_id'] == $_SESSION['user_id'] ? 'text-right' : 'text-left' ?>">
-                                    <div class="inline-block p-2 rounded-lg <?= $message['sender_id'] == $_SESSION['user_id'] ? 'bg-blue-500 text-white' : 'bg-gray-300' ?>">
-                                        <?= htmlspecialchars($message['message']) ?>
+                                <div class="mb-4 <?= $message['sender_id'] == $_SESSION['user_id'] ? 'text-right' : 'text-left' ?>" id="message-<?= $message['id'] ?>">
+                                    <div class="inline-block p-2 rounded-lg <?= $message['sender_id'] == $_SESSION['user_id'] ? 'bg-blue-500 text-white' : 'bg-gray-300' ?> relative group">
+                                        <span class="message-text"><?= htmlspecialchars($message['message']) ?></span>
+                                        <?php if ($message['sender_id'] == $_SESSION['user_id']): ?>
+                                            <div class="hidden group-hover:block absolute top-0 right-0 -mt-2 -mr-2">
+                                                <button onclick="editMessage(<?= $message['id'] ?>)" class="bg-yellow-500 text-white rounded-full p-1 text-xs mr-1">Edit</button>
+                                                <button onclick="deleteMessage(<?= $message['id'] ?>)" class="bg-red-500 text-white rounded-full p-1 text-xs">Delete</button>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
@@ -171,5 +218,34 @@ if ($activeConversationId) {
             </div>
         </div>
     </div>
+
+    <script>
+    function editMessage(messageId) {
+        const messageElement = document.querySelector(`#message-${messageId} .message-text`);
+        const currentMessage = messageElement.textContent;
+        const newMessage = prompt("Edit your message:", currentMessage);
+        
+        if (newMessage !== null && newMessage !== currentMessage) {
+            $.post('chat.php', {
+                action: 'edit_message',
+                message_id: messageId,
+                new_message: newMessage
+            }, function(response) {
+                messageElement.textContent = newMessage;
+            });
+        }
+    }
+
+    function deleteMessage(messageId) {
+        if (confirm("Are you sure you want to delete this message?")) {
+            $.post('chat.php', {
+                action: 'delete_message',
+                message_id: messageId
+            }, function(response) {
+                $(`#message-${messageId}`).remove();
+            });
+        }
+    }
+    </script>
 </body>
 </html>
