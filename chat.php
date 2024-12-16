@@ -152,7 +152,6 @@ if ($activeConversationId) {
                             <h2 class="text-lg font-semibold"><?= htmlspecialchars($userDetails['name']) ?></h2>
                             <p class="text-sm text-gray-600"><?= htmlspecialchars($userDetails['email']) ?></p>
                         </div>
-                        <button onclick="location.href='logout.php'" class="bg-red-500 text-white px-4 py-2 rounded">Logout</button>
                     </div>
 
                     <?php if ($activeConversationId): ?>
@@ -161,6 +160,9 @@ if ($activeConversationId) {
                                 <div class="mb-4 <?= $message['sender_id'] == $_SESSION['user_id'] ? 'text-right' : 'text-left' ?>" id="message-<?= $message['id'] ?>">
                                     <div class="inline-block p-2 rounded-lg <?= $message['sender_id'] == $_SESSION['user_id'] ? 'bg-blue-500 text-white' : 'bg-gray-300' ?> relative group">
                                         <span class="message-text"><?= htmlspecialchars($message['message']) ?></span>
+                                        <div class="text-xs mt-1 text-gray-500">
+                                            <?= date('M d, Y H:i', strtotime($message['created_at'])) ?>
+                                        </div>
                                         <?php if ($message['sender_id'] == $_SESSION['user_id']): ?>
                                             <div class="hidden group-hover:block absolute top-0 right-0 -mt-2 -mr-2">
                                                 <button onclick="editMessage(<?= $message['id'] ?>)" class="bg-yellow-500 text-white rounded-full p-1 text-xs mr-1">Edit</button>
