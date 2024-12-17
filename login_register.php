@@ -155,11 +155,18 @@ $conn->close();
         .flip .flipper {
             transform: rotateY(180deg);
         }
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        .fade-out {
+            animation: fadeOut 0.5s ease-out forwards;
+        }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-6 bg-gray-100">
     <?php if (!empty($message)): ?>
-        <div class="fixed top-5 left-1/2 transform -translate-x-1/2 p-4 rounded-md shadow-md z-50 
+        <div id="notification" class="fixed top-5 left-1/2 transform -translate-x-1/2 p-4 rounded-md shadow-md z-50 
             <?php echo $message_type === 'success' ? 'bg-green-100 text-green-700 border-green-400' : 
                 ($message_type === 'error' ? 'bg-red-100 text-red-700 border-red-400' : 
                 'bg-yellow-100 text-yellow-700 border-yellow-400'); ?>">
@@ -301,6 +308,19 @@ $conn->close();
         document.getElementById('show-login').addEventListener('click', function(e) {
             e.preventDefault();
             document.querySelector('.flip-container').classList.remove('flip');
+        });
+
+        // New notification hide functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            var notification = document.getElementById('notification');
+            if (notification) {
+                setTimeout(function() {
+                    notification.classList.add('fade-out');
+                    setTimeout(function() {
+                        notification.style.display = 'none';
+                    }, 500);
+                }, 5000);
+            }
         });
     </script>
 </body>
