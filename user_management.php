@@ -25,8 +25,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && isset($_P
     $stmt->close();
 }
 
-// Handle user addition/update
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_user'])) {
+// Handle user update
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_user'])) {
+    $user_id = $_POST['user_id'];
     $name = $_POST['name'];
     $email = $_POST['email'];
     $nic = $_POST['nic'];
@@ -37,20 +38,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_user'])) {
     $role = $_POST['role'];
     $status = $_POST['status'];
 
-    if (isset($_POST['user_id'])) {
-        // Update existing user
-        $user_id = $_POST['user_id'];
-        $sql = "UPDATE users SET name = ?, email = ?, nic = ?, position = ?, faculty = ?, mobile = ?, employee_number = ?, role = ?, status = ? WHERE id = ?";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("sssssssssi", $name, $email, $nic, $position, $faculty, $mobile, $employee_number, $role, $status, $user_id);
-    } else {
-        // Add new user
-        $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
-        $sql = "INSERT INTO users (name, email, password, nic, position, faculty, mobile, employee_number, role, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("ssssssssss", $name, $email, $password, $nic, $position, $faculty, $mobile, $employee_number, $role, $status);
-    }
-    
+    $sql = "UPDATE users SET name = ?, email = ?, nic = ?, position = ?, faculty = ?, mobile = ?, employee_number = ?, role = ?, status = ? WHERE id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("sssssssssi", $name, $email, $nic, $position, $faculty, $mobile, $employee_number, $role, $status, $user_id);
     $stmt->execute();
     $stmt->close();
 }
@@ -58,6 +48,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_user'])) {
 // Fetch all users
 $sql = "SELECT id, name, email, nic, position, faculty, mobile, employee_number, role, status FROM users ORDER BY status DESC, name ASC";
 $result = $conn->query($sql);
+
+// Fetch pending users
+$sql_pending = "SELECT id, name, email, nic, position, faculty, mobile, employee_number, role FROM users WHERE status = 'pending' ORDER BY name ASC";
+$result_pending = $conn->query($sql_pending);
 ?>
 
 <!DOCTYPE html>
@@ -74,98 +68,88 @@ $result = $conn->query($sql);
         <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
             <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">User Management</h1>
             
-            <!-- Add/Edit User Form -->
-            <div class="mb-8 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-                <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">Add/Edit User</h2>
-                <form action="" method="POST">
-                    <div class="grid grid-cols-2 gap-4">
-                        <input type="hidden" name="user_id" id="user_id">
-                        <div>
-                            <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
-                            <input type="text" id="name" name="name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        </div>
-                        <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-                            <input type="email" id="email" name="email" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        </div>
-                        <div>
-                            <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Password (for new users)</label>
-                            <input type="password" id="password" name="password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        </div>
-                        <div>
-                            <label for="nic" class="block text-sm font-medium text-gray-700 dark:text-gray-300">NIC</label>
-                            <input type="text" id="nic" name="nic" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        </div>
-                        <div>
-                            <label for="position" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Position</label>
-                            <input type="text" id="position" name="position" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        </div>
-                        <div>
-                            <label for="faculty" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Faculty</label>
-                            <input type="text" id="faculty" name="faculty" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        </div>
-                        <div>
-                            <label for="mobile" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Mobile</label>
-                            <input type="text" id="mobile" name="mobile" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        </div>
-                        <div>
-                            <label for="employee_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Employee Number</label>
-                            <input type="text" id="employee_number" name="employee_number" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                        </div>
-                        <div>
-                            <label for="role" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Role</label>
-                            <select id="role" name="role" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                                <option value="user">User</option>
-                                <option value="admin">Admin</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-                            <select id="status" name="status" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                                <option value="pending">Pending</option>
-                                <option value="approved">Approved</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        <button type="submit" name="submit_user" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                            Submit
-                        </button>
-                    </div>
-                </form>
+            <!-- Tabs -->
+            <div class="mb-4">
+                <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">
+                    <li class="mr-2">
+                        <a href="#" class="inline-block p-4 text-blue-600 bg-gray-100 rounded-t-lg active dark:bg-gray-800 dark:text-blue-500" onclick="showTab('all-users')">All Users</a>
+                    </li>
+                    <li class="mr-2">
+                        <a href="#" class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300" onclick="showTab('pending-approvals')">Pending Approvals</a>
+                    </li>
+                </ul>
             </div>
 
-            <!-- User List -->
-            <div class="overflow-x-auto relative shadow-md sm:rounded-lg">
-                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                        <tr>
-                            <th scope="col" class="py-3 px-6">Name</th>
-                            <th scope="col" class="py-3 px-6">Email</th>
-                            <th scope="col" class="py-3 px-6">NIC</th>
-                            <th scope="col" class="py-3 px-6">Position</th>
-                            <th scope="col" class="py-3 px-6">Faculty</th>
-                            <th scope="col" class="py-3 px-6">Mobile</th>
-                            <th scope="col" class="py-3 px-6">Employee Number</th>
-                            <th scope="col" class="py-3 px-6">Role</th>
-                            <th scope="col" class="py-3 px-6">Status</th>
-                            <th scope="col" class="py-3 px-6">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php while ($row = $result->fetch_assoc()): ?>
-                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                <td class="py-4 px-6"><?php echo htmlspecialchars($row['name']); ?></td>
-                                <td class="py-4 px-6"><?php echo htmlspecialchars($row['email']); ?></td>
-                                <td class="py-4 px-6"><?php echo htmlspecialchars($row['nic']); ?></td>
-                                <td class="py-4 px-6"><?php echo htmlspecialchars($row['position']); ?></td>
-                                <td class="py-4 px-6"><?php echo htmlspecialchars($row['faculty']); ?></td>
-                                <td class="py-4 px-6"><?php echo htmlspecialchars($row['mobile']); ?></td>
-                                <td class="py-4 px-6"><?php echo htmlspecialchars($row['employee_number']); ?></td>
-                                <td class="py-4 px-6"><?php echo htmlspecialchars($row['role']); ?></td>
-                                <td class="py-4 px-6"><?php echo htmlspecialchars($row['status']); ?></td>
-                                <td class="py-4 px-6">
-                                    <?php if ($row['status'] === 'pending'): ?>
+            <!-- All Users Tab -->
+            <div id="all-users" class="tab-content">
+                <div class="overflow-x-auto relative shadow-md sm:rounded-lg">
+                    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                            <tr>
+                                <th scope="col" class="py-3 px-6">Name</th>
+                                <th scope="col" class="py-3 px-6">Email</th>
+                                <th scope="col" class="py-3 px-6">NIC</th>
+                                <th scope="col" class="py-3 px-6">Position</th>
+                                <th scope="col" class="py-3 px-6">Faculty</th>
+                                <th scope="col" class="py-3 px-6">Mobile</th>
+                                <th scope="col" class="py-3 px-6">Employee Number</th>
+                                <th scope="col" class="py-3 px-6">Role</th>
+                                <th scope="col" class="py-3 px-6">Status</th>
+                                <th scope="col" class="py-3 px-6">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php while ($row = $result->fetch_assoc()): ?>
+                                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['name']); ?></td>
+                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['email']); ?></td>
+                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['nic']); ?></td>
+                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['position']); ?></td>
+                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['faculty']); ?></td>
+                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['mobile']); ?></td>
+                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['employee_number']); ?></td>
+                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['role']); ?></td>
+                                    <td class="py-4 px-6">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                            <?php echo $row['status'] === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'; ?>">
+                                            <?php echo ucfirst(htmlspecialchars($row['status'])); ?>
+                                        </span>
+                                    </td>
+                                    <td class="py-4 px-6">
+                                        <button onclick="openUpdateModal(<?php echo htmlspecialchars(json_encode($row)); ?>)" class="text-blue-600 dark:text-blue-500 hover:underline">
+                                            Edit
+                                        </button>
+                                    </td>
+                                </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pending Approvals Tab -->
+            <div id="pending-approvals" class="tab-content hidden">
+                <div class="overflow-x-auto relative shadow-md sm:rounded-lg">
+                    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                            <tr>
+                                <th scope="col" class="py-3 px-6">Name</th>
+                                <th scope="col" class="py-3 px-6">Email</th>
+                                <th scope="col" class="py-3 px-6">NIC</th>
+                                <th scope="col" class="py-3 px-6">Position</th>
+                                <th scope="col" class="py-3 px-6">Faculty</th>
+                                <th scope="col" class="py-3 px-6">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php while ($row = $result_pending->fetch_assoc()): ?>
+                                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['name']); ?></td>
+                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['email']); ?></td>
+                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['nic']); ?></td>
+                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['position']); ?></td>
+                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['faculty']); ?></td>
+                                    <td class="py-4 px-6">
                                         <form method="POST" class="inline-block mr-2">
                                             <input type="hidden" name="user_id" value="<?php echo $row['id']; ?>">
                                             <input type="hidden" name="action" value="approve">
@@ -180,32 +164,124 @@ $result = $conn->query($sql);
                                                 Reject
                                             </button>
                                         </form>
-                                    <?php endif; ?>
-                                    <button onclick="editUser(<?php echo htmlspecialchars(json_encode($row)); ?>)" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                                        Edit
-                                    </button>
-                                </td>
-                            </tr>
-                        <?php endwhile; ?>
-                    </tbody>
-                </table>
+                                    </td>
+                                </tr>
+                            <?php endwhile; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Update User Modal -->
+    <div id="updateModal" class="fixed z-10 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+                        Update User
+                    </h3>
+                    <div class="mt-2">
+                        <form id="updateForm" method="POST">
+                            <input type="hidden" id="update_user_id" name="user_id">
+                            <div class="grid grid-cols-1 gap-4">
+                                <div>
+                                    <label for="update_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+                                    <input type="text" id="update_name" name="name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                </div>
+                                <div>
+                                    <label for="update_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                                    <input type="email" id="update_email" name="email" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                </div>
+                                <div>
+                                    <label for="update_nic" class="block text-sm font-medium text-gray-700 dark:text-gray-300">NIC</label>
+                                    <input type="text" id="update_nic" name="nic" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                </div>
+                                <div>
+                                    <label for="update_position" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Position</label>
+                                    <input type="text" id="update_position" name="position" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                </div>
+                                <div>
+                                    <label for="update_faculty" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Faculty</label>
+                                    <input type="text" id="update_faculty" name="faculty" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                </div>
+                                <div>
+                                    <label for="update_mobile" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Mobile</label>
+                                    <input type="text" id="update_mobile" name="mobile" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                </div>
+                                <div>
+                                    <label for="update_employee_number" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Employee Number</label>
+                                    <input type="text" id="update_employee_number" name="employee_number" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                </div>
+                                <div>
+                                    <label for="update_role" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Role</label>
+                                    <select id="update_role" name="role" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                        <option value="user">User</option>
+                                        <option value="admin">Admin</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="update_status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                                    <select id="update_status" name="status" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                        <option value="pending">Pending</option>
+                                        <option value="approved">Approved</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <button type="submit" name="update_user" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    Update User
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700" onclick="closeUpdateModal()">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
-        function editUser(user) {
-            document.getElementById('user_id').value = user.id;
-            document.getElementById('name').value = user.name;
-            document.getElementById('email').value = user.email;
-            document.getElementById('nic').value = user.nic;
-            document.getElementById('position').value = user.position;
-            document.getElementById('faculty').value = user.faculty;
-            document.getElementById('mobile').value = user.mobile;
-            document.getElementById('employee_number').value = user.employee_number;
-            document.getElementById('role').value = user.role;
-            document.getElementById('status').value = user.status;
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            document.getElementById(tabId).classList.remove('hidden');
+
+            document.querySelectorAll('.flex.flex-wrap a').forEach(link => {
+                link.classList.remove('text-blue-600', 'bg-gray-100', 'dark:bg-gray-800', 'dark:text-blue-500');
+                link.classList.add('hover:text-gray-600', 'hover:bg-gray-50', 'dark:hover:bg-gray-800', 'dark:hover:text-gray-300');
+            });
+            document.querySelector(`a[onclick="showTab('${tabId}')"]`).classList.add('text-blue-600', 'bg-gray-100', 'dark:bg-gray-800', 'dark:text-blue-500');
+            document.querySelector(`a[onclick="showTab('${tabId}')"]`).classList.remove('hover:text-gray-600', 'hover:bg-gray-50', 'dark:hover:bg-gray-800', 'dark:hover:text-gray-300');
+        }
+
+        function openUpdateModal(user) {
+            document.getElementById('update_user_id').value = user.id;
+            document.getElementById('update_name').value = user.name;
+            document.getElementById('update_email').value = user.email;
+            document.getElementById('update_nic').value = user.nic;
+            document.getElementById('update_position').value = user.position;
+            document.getElementById('update_faculty').value = user.faculty;
+            document.getElementById('update_mobile').value = user.mobile;
+            document.getElementById('update_employee_number').value = user.employee_number;
+            document.getElementById('update_role').value = user.role;
+            document.getElementById('update_status').value = user.status;
+            document.getElementById('updateModal').classList.remove('hidden');
+        }
+
+        function closeUpdateModal() {
+            document.getElementById('updateModal').classList.add('hidden');
         }
     </script>
     <script src="theme.js"></script>
 </body>
 </html>
+
