@@ -27,39 +27,15 @@ $stmt->close();
                 </a>
             </li>
             <li>
-                <a href="e-signpage.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                    <i class="fas fa-signature w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
-                    <span class="ml-3">E-Sign</span>
-                </a>
-            </li>
-            <li>
-                <a href="edit_user.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                    <i class="fas fa-user w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
-                    <span class="ml-3">User</span>
-                </a>
-            </li>
-            <li>
                 <a href="activity_log.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
                     <i class="fas fa-history w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
                     <span class="ml-3">Activity Log</span>
                 </a>
             </li>
             <li>
-                <a href="support.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                    <i class="fas fa-question-circle w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
-                    <span class="ml-3">Support</span>
-                </a>
-            </li>
-            <li>
-                <a href="message.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
+                <a href="chat.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
                     <i class="fas fa-envelope w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
                     <span class="ml-3">Messages</span>
-                </a>
-            </li>
-            <li>
-                <a href="feedbacks.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                    <i class="fas fa-comment-alt w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
-                    <span class="ml-3">Feedback</span>
                 </a>
             </li>
             <li>
@@ -76,11 +52,17 @@ $stmt->close();
             </li>
         </ul>
         <div class="pt-4 mt-4 space-y-2 font-medium border-t border-gray-200 dark:border-gray-700">
-            <div class="flex items-center p-2 text-gray-900 dark:text-white">
+            <div id="userProfileTrigger" class="flex items-center p-2 text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                 <div>
                     <p class="text-sm font-semibold"><?php echo htmlspecialchars($user['name']); ?></p>
                     <p class="text-xs text-gray-500 dark:text-gray-400"><?php echo htmlspecialchars($user['email']); ?></p>
                 </div>
+            </div>
+            <div id="userProfileMenu" class="hidden ml-2">
+                <a href="edit_profile.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
+                    <i class="fas fa-user-edit w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
+                    <span class="ml-3">Edit Profile</span>
+                </a>
             </div>
             <a href="logout.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
                 <i class="fas fa-sign-out-alt w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
@@ -90,3 +72,20 @@ $stmt->close();
     </div>
 </div>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const userProfileTrigger = document.getElementById('userProfileTrigger');
+    const userProfileMenu = document.getElementById('userProfileMenu');
+
+    userProfileTrigger.addEventListener('click', function() {
+        userProfileMenu.classList.toggle('hidden');
+    });
+
+    // Close the menu when clicking outside
+    document.addEventListener('click', function(event) {
+        if (!userProfileTrigger.contains(event.target) && !userProfileMenu.contains(event.target)) {
+            userProfileMenu.classList.add('hidden');
+        }
+    });
+});
+</script>
