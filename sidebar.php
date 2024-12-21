@@ -2,48 +2,88 @@
 include 'config.php';
 include 'session.php';
 
-// Fetch user details
-$stmt = $conn->prepare("SELECT name, email FROM users WHERE id = ?");
+// Fetch user details including role
+$stmt = $conn->prepare("SELECT name, email, role FROM users WHERE id = ?");
 $stmt->bind_param("i", $_SESSION['user_id']);
 $stmt->execute();
 $result = $stmt->get_result();
 $user = $result->fetch_assoc();
 $stmt->close();
+
+// Define shared menu items
+$sharedMenuItems = [
+    ['url' => 'dashboard.php', 'icon' => 'fas fa-tachometer-alt', 'text' => 'Dashboard'],
+    ['url' => 'esign.php', 'icon' => 'fas fa-file-signature', 'text' => 'eSign', 'submenu' => [
+        ['url' => 'upload_documents.php', 'text' => 'Upload Documents'],
+        ['url' => 'documents_to_sign.php', 'text' => 'Documents to Sign'],
+    ]],
+    ['url' => 'insight_hub.php', 'icon' => 'fas fa-chart-line', 'text' => 'Insight Hub'],
+    ['url' => 'activity_log.php', 'icon' => 'fas fa-history', 'text' => 'Activity Log'],
+    ['url' => 'edit_profile.php', 'icon' => 'fas fa-user-edit', 'text' => 'Edit Profile'],
+    ['url' => 'live_chat.php', 'icon' => 'fas fa-comments', 'text' => 'Live Chat'],
+];
+
+// Define admin-specific menu items
+$adminMenuItems = [
+    ['url' => 'document_management.php', 'icon' => 'fas fa-folder-open', 'text' => 'Document Management'],
+    ['url' => 'user_management.php', 'icon' => 'fas fa-users-cog', 'text' => 'User Management'],
+    ['url' => 'reports.php', 'icon' => 'fas fa-chart-bar', 'text' => 'Reports'],
+];
+
+// Combine menu items based on user role
+$menuItems = $sharedMenuItems;
+if ($user['role'] === 'admin') {
+    $menuItems = array_merge($menuItems, $adminMenuItems);
+}
+
+function renderMenuItem($item) {
+    $submenuHtml = '';
+    if (isset($item['submenu'])) {
+        $submenuHtml .= '<ul class="ml-4 mt-2 space-y-2 hidden">';
+        foreach ($item['submenu'] as $subitem) {
+            $submenuHtml .= '<li><a href="' . $subitem['url'] . '" class="flex items-center p-2 text-gray-600 rounded-lg dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 group">' . $subitem['text'] . '</a></li>';
+        }
+        $submenuHtml .= '</ul>';
+    }
+
+    return '
+    <li>
+        <a href="' . $item['url'] . '" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
+            <i class="' . $item['icon'] . ' w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
+            <span class="ml-3">' . $item['text'] . '</span>
+            ' . (isset($item['submenu']) ? '<i class="fas fa-chevron-down ml-auto"></i>' : '') . '
+        </a>
+        ' . $submenuHtml . '
+    </li>';
+}
+
+$isAdmin = $user['role'] === 'admin';
+$sidebarClass = $isAdmin ? 'bg-gray-900 dark:bg-gray-950' : 'bg-gray-50 dark:bg-gray-800';
+$headerClass = $isAdmin ? 'bg-gray-800 dark:bg-gray-900' : 'border-b border-gray-200 dark:border-gray-700';
+$headerTextClass = $isAdmin ? 'text-white' : 'text-gray-800 dark:text-white';
 ?>
 
 <div id="sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0">
-    <div class="h-full px-3 py-4 overflow-y-auto bg-gray-50 dark:bg-gray-800">
-        <div class="flex items-center justify-between mb-5 pb-3 border-b border-gray-200 dark:border-gray-700">
-            <span class="text-xl font-semibold text-gray-800 dark:text-white">SignEase</span>
+    <div class="h-full px-3 py-4 overflow-y-auto <?php echo $sidebarClass; ?>">
+        <div class="flex items-center justify-between mb-5 pb-3 <?php echo $headerClass; ?>">
+            <?php if ($isAdmin): ?>
+                <div class="flex items-center">
+                    <i class="fas fa-user-shield text-2xl text-yellow-400 mr-2"></i>
+                    <span class="text-xl font-semibold <?php echo $headerTextClass; ?>">SignEase Admin</span>
+                </div>
+            <?php else: ?>
+                <span class="text-xl font-semibold <?php echo $headerTextClass; ?>">SignEase</span>
+            <?php endif; ?>
             <button id="sidebarToggle" class="text-gray-500 focus:outline-none sm:hidden">
                 <i class="fas fa-bars"></i>
             </button>
         </div>
         <ul class="space-y-2 font-medium">
-            <li>
-                <a href="Upload_Document.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                    <i class="fas fa-upload w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
-                    <span class="ml-3">Upload Management</span>
-                </a>
-            </li>
-            <li>
-                <a href="activity_log.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                    <i class="fas fa-history w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
-                    <span class="ml-3">Activity Log</span>
-                </a>
-            </li>
-            <li>
-                <a href="chat.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                    <i class="fas fa-envelope w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
-                    <span class="ml-3">Messages</span>
-                </a>
-            </li>
-            <li>
-                <a href="recipient_documents.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                    <i class="fas fa-file-signature w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
-                    <span class="ml-3">Documents to Sign</span>
-                </a>
-            </li>
+            <?php
+            foreach ($menuItems as $item) {
+                echo renderMenuItem($item);
+            }
+            ?>
             <li>
                 <button id="themeToggle" class="flex items-center w-full p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
                     <i id="themeIcon" class="fas fa-sun w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
@@ -85,6 +125,30 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(event) {
         if (!userProfileTrigger.contains(event.target) && !userProfileMenu.contains(event.target)) {
             userProfileMenu.classList.add('hidden');
+        }
+    });
+
+    // Toggle submenu visibility
+    document.querySelectorAll('a:has(.fa-chevron-down)').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+            e.preventDefault();
+            this.nextElementSibling.classList.toggle('hidden');
+        });
+    });
+
+    // Theme toggle functionality
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    const htmlElement = document.documentElement;
+
+    themeToggle.addEventListener('click', function() {
+        htmlElement.classList.toggle('dark');
+        if (htmlElement.classList.contains('dark')) {
+            themeIcon.classList.remove('fa-sun');
+            themeIcon.classList.add('fa-moon');
+        } else {
+            themeIcon.classList.remove('fa-moon');
+            themeIcon.classList.add('fa-sun');
         }
     });
 });
