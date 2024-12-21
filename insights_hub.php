@@ -16,6 +16,22 @@ function addFAQ($question, $answer) {
     return $stmt->execute();
 }
 
+// Function to update an existing FAQ
+function updateFAQ($id, $question, $answer) {
+    global $conn;
+    $stmt = $conn->prepare("UPDATE faq SET question = ?, answer = ? WHERE id = ?");
+    $stmt->bind_param("ssi", $question, $answer, $id);
+    return $stmt->execute();
+}
+
+// Function to delete an FAQ
+function deleteFAQ($id) {
+    global $conn;
+    $stmt = $conn->prepare("DELETE FROM faq WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    return $stmt->execute();
+}
+
 // Function to get all FAQs
 function getFAQs() {
     global $conn;
@@ -30,14 +46,32 @@ function getFeedback() {
     return $result->fetch_all(MYSQLI_ASSOC);
 }
 
-// Handle form submission for adding FAQ
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_faq'])) {
-    $question = $_POST['question'];
-    $answer = $_POST['answer'];
-    if (addFAQ($question, $answer)) {
-        $success_message = "FAQ added successfully!";
-    } else {
-        $error_message = "Error adding FAQ. Please try again.";
+// Handle form submission for adding/editing FAQ
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (isset($_POST['add_faq'])) {
+        $question = $_POST['question'];
+        $answer = $_POST['answer'];
+        if (addFAQ($question, $answer)) {
+            $success_message = "FAQ added successfully!";
+        } else {
+            $error_message = "Error adding FAQ. Please try again.";
+        }
+    } elseif (isset($_POST['edit_faq'])) {
+        $id = $_POST['faq_id'];
+        $question = $_POST['question'];
+        $answer = $_POST['answer'];
+        if (updateFAQ($id, $question, $answer)) {
+            $success_message = "FAQ updated successfully!";
+        } else {
+            $error_message = "Error updating FAQ. Please try again.";
+        }
+    } elseif (isset($_POST['delete_faq'])) {
+        $id = $_POST['faq_id'];
+        if (deleteFAQ($id)) {
+            $success_message = "FAQ deleted successfully!";
+        } else {
+            $error_message = "Error deleting FAQ. Please try again.";
+        }
     }
 }
 
@@ -54,6 +88,21 @@ $feedbacks = getFeedback();
     <title>Insights Hub - SignEase</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900">
     <div class="p-4 sm:ml-64">
@@ -64,59 +113,63 @@ $feedbacks = getFeedback();
             <div class="mb-4">
                 <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">
                     <li class="mr-2">
-                        <a href="#" class="inline-block p-4 text-blue-600 bg-gray-100 rounded-t-lg active dark:bg-gray-800 dark:text-blue-500" onclick="showTab('add-faq')">Add FAQ</a>
+                        <a href="#" class="inline-block p-4 text-blue-600 bg-gray-100 rounded-t-lg active dark:bg-gray-800 dark:text-blue-500" data-tab="faq-section">FAQs</a>
                     </li>
                     <li class="mr-2">
-                        <a href="#" class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300" onclick="showTab('view-faqs')">View FAQs</a>
-                    </li>
-                    <li class="mr-2">
-                        <a href="#" class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300" onclick="showTab('view-feedback')">View Feedback</a>
+                        <a href="#" class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300" data-tab="feedback-section">Feedback</a>
                     </li>
                 </ul>
             </div>
 
-            <!-- Add FAQ Section -->
-            <div id="add-faq" class="tab-content">
-                <h2 class="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Add New FAQ</h2>
-                <?php if (isset($success_message)): ?>
-                    <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-                        <span class="block sm:inline"><?php echo $success_message; ?></span>
-                    </div>
-                <?php endif; ?>
-                <?php if (isset($error_message)): ?>
-                    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                        <span class="block sm:inline"><?php echo $error_message; ?></span>
-                    </div>
-                <?php endif; ?>
-                <form action="" method="POST" class="space-y-4">
-                    <div>
-                        <label for="question" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Question</label>
-                        <input type="text" id="question" name="question" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required>
-                    </div>
-                    <div>
-                        <label for="answer" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Answer</label>
-                        <textarea id="answer" name="answer" rows="4" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required></textarea>
-                    </div>
-                    <button type="submit" name="add_faq" class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Add FAQ</button>
-                </form>
-            </div>
-
-            <!-- View FAQs Section -->
-            <div id="view-faqs" class="tab-content hidden">
-                <h2 class="text-2xl font-bold mb-4 text-gray-800 dark:text-white">View FAQs</h2>
-                <div class="space-y-4">
-                    <?php foreach ($faqs as $faq): ?>
-                        <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4">
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2"><?php echo htmlspecialchars($faq['question']); ?></h3>
-                            <p class="text-gray-700 dark:text-gray-300"><?php echo htmlspecialchars($faq['answer']); ?></p>
-                        </div>
-                    <?php endforeach; ?>
+            <?php if (isset($success_message)): ?>
+                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <span class="block sm:inline"><?php echo $success_message; ?></span>
                 </div>
+            <?php endif; ?>
+            <?php if (isset($error_message)): ?>
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    <span class="block sm:inline"><?php echo $error_message; ?></span>
+                </div>
+            <?php endif; ?>
+
+            <!-- FAQ Section -->
+            <div id="faq-section" class="tab-content active fade-in">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800 dark:text-white">FAQs</h2>
+                <?php if (empty($faqs)): ?>
+                    <div class="text-center py-8">
+                        <p class="text-gray-600 dark:text-gray-400 mb-4">No FAQs available. Add your first FAQ!</p>
+                        <button onclick="openFAQModal()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+                            <i class="fas fa-plus mr-2"></i>Add FAQ
+                        </button>
+                    </div>
+                <?php else: ?>
+                    <div class="mb-4 text-right">
+                        <button onclick="openFAQModal()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+                            <i class="fas fa-plus mr-2"></i>Add FAQ
+                        </button>
+                    </div>
+                    <div class="space-y-4">
+                        <?php foreach ($faqs as $faq): ?>
+                            <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4">
+                                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2"><?php echo htmlspecialchars($faq['question']); ?></h3>
+                                <p class="text-gray-700 dark:text-gray-300 mb-4"><?php echo htmlspecialchars($faq['answer']); ?></p>
+                                <div class="flex justify-end space-x-2">
+                                    <button onclick="openFAQModal(<?php echo htmlspecialchars(json_encode($faq)); ?>)" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200">
+                                        <i class="fas fa-edit mr-1"></i>Edit
+                                    </button>
+                                    <button onclick="deleteFAQ(<?php echo $faq['id']; ?>)" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200">
+                                        <i class="fas fa-trash-alt mr-1"></i>Delete
+                                    </button>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
             </div>
 
-            <!-- View Feedback Section -->
-            <div id="view-feedback" class="tab-content hidden">
-                <h2 class="text-2xl font-bold mb-4 text-gray-800 dark:text-white">View Feedback</h2>
+            <!-- Feedback Section -->
+            <div id="feedback-section" class="tab-content fade-in">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Feedback</h2>
                 <div class="overflow-x-auto relative shadow-md sm:rounded-lg">
                     <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
@@ -145,6 +198,42 @@ $feedbacks = getFeedback();
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ Modal -->
+    <div id="faqModal" class="fixed z-10 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form id="faqForm" method="POST">
+                    <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+                            Add/Edit FAQ
+                        </h3>
+                        <div class="mt-2">
+                            <input type="hidden" id="faqId" name="faq_id">
+                            <div class="mb-4">
+                                <label for="question" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Question</label>
+                                <input type="text" id="question" name="question" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required>
+                            </div>
+                            <div class="mb-4">
+                                <label for="answer" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Answer</label>
+                                <textarea id="answer" name="answer" rows="4" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white" required></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" name="add_faq" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                            Save
+                        </button>
+                        <button type="button" onclick="closeFAQModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm dark:bg-gray-800 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -178,18 +267,70 @@ $feedbacks = getFeedback();
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('[data-tab]');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const tabId = this.getAttribute('data-tab');
+                    showTab(tabId);
+                });
+            });
+        });
+
         function showTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.add('hidden');
+                tab.classList.remove('active');
             });
-            document.getElementById(tabId).classList.remove('hidden');
+            document.getElementById(tabId).classList.add('active');
 
-            document.querySelectorAll('.flex.flex-wrap a').forEach(link => {
+            document.querySelectorAll('[data-tab]').forEach(link => {
                 link.classList.remove('text-blue-600', 'bg-gray-100', 'dark:bg-gray-800', 'dark:text-blue-500');
                 link.classList.add('hover:text-gray-600', 'hover:bg-gray-50', 'dark:hover:bg-gray-800', 'dark:hover:text-gray-300');
             });
-            document.querySelector(`a[onclick="showTab('${tabId}')"]`).classList.add('text-blue-600', 'bg-gray-100', 'dark:bg-gray-800', 'dark:text-blue-500');
-            document.querySelector(`a[onclick="showTab('${tabId}')"]`).classList.remove('hover:text-gray-600', 'hover:bg-gray-50', 'dark:hover:bg-gray-800', 'dark:hover:text-gray-300');
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('text-blue-600', 'bg-gray-100', 'dark:bg-gray-800', 'dark:text-blue-500');
+            document.querySelector(`[data-tab="${tabId}"]`).classList.remove('hover:text-gray-600', 'hover:bg-gray-50', 'dark:hover:bg-gray-800', 'dark:hover:text-gray-300');
+        }
+
+        function openFAQModal(faq = null) {
+            const modal = document.getElementById('faqModal');
+            const form = document.getElementById('faqForm');
+            const titleElement = modal.querySelector('#modal-title');
+            const questionInput = document.getElementById('question');
+            const answerInput = document.getElementById('answer');
+            const faqIdInput = document.getElementById('faqId');
+
+            if (faq) {
+                titleElement.textContent = 'Edit FAQ';
+                questionInput.value = faq.question;
+                answerInput.value = faq.answer;
+                faqIdInput.value = faq.id;
+                form.querySelector('button[type="submit"]').name = 'edit_faq';
+            } else {
+                titleElement.textContent = 'Add FAQ';
+                form.reset();
+                faqIdInput.value = '';
+                form.querySelector('button[type="submit"]').name = 'add_faq';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeFAQModal() {
+            document.getElementById('faqModal').classList.add('hidden');
+        }
+
+        function deleteFAQ(id) {
+            if (confirm('Are you sure you want to delete this FAQ?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.innerHTML = `
+                    <input type="hidden" name="delete_faq" value="1">
+                    <input type="hidden" name="faq_id" value="${id}">
+                `;
+                document.body.appendChild(form);
+                form.submit();
+            }
         }
 
         function viewFeedbackDetails(feedback) {
