@@ -17,10 +17,10 @@ $sharedMenuItems = [
         ['url' => 'upload_documents.php', 'text' => 'Upload Documents'],
         ['url' => 'documents_to_sign.php', 'text' => 'Documents to Sign'],
     ]],
-    ['url' => 'insight_hub.php', 'icon' => 'fas fa-chart-line', 'text' => 'Insight Hub'],
+    ['url' => 'insights_hub.php', 'icon' => 'fas fa-chart-line', 'text' => 'Insight Hub'],
     ['url' => 'activity_log.php', 'icon' => 'fas fa-history', 'text' => 'Activity Log'],
     ['url' => 'edit_profile.php', 'icon' => 'fas fa-user-edit', 'text' => 'Edit Profile'],
-    ['url' => 'live_chat.php', 'icon' => 'fas fa-comments', 'text' => 'Live Chat'],
+    ['url' => 'chat.php', 'icon' => 'fas fa-comments', 'text' => 'Live Chat'],
 ];
 
 // Define admin-specific menu items

@@ -10,7 +10,7 @@ if (!isset($_SESSION['user_id'])) {
 
 // Fetch documents for the current user
 $user_id = $_SESSION['user_id'];
-$sql = "SELECT d.id, d.file_path, d.drive_link, d.requirements, d.description, d.status, 
+$sql = "SELECT d.id, d.file_path, d.signed_file_path, d.drive_link, d.requirements, d.description, d.status, 
                u.id AS sender_id, u.name AS sender_name, u.email AS sender_email
         FROM documents d
         JOIN users u ON d.sender_id = u.id
@@ -70,14 +70,14 @@ $result = $stmt->get_result();
                                         <span class="text-xs text-gray-500 dark:text-gray-400"><?php echo htmlspecialchars($row['sender_email']); ?></span>
                                     </td>
                                     <td class="py-4 px-6">
-                                        <?php
-                                        if (!empty($row['drive_link'])) {
-                                            echo '<a href="' . htmlspecialchars($row['drive_link']) . '" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">View on Google Drive</a>';
-                                        } else {
-                                            $file_name = basename($row['file_path']);
-                                            echo '<a href="' . htmlspecialchars($row['file_path']) . '" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">' . htmlspecialchars($file_name) . '</a>';
-                                        }
-                                        ?>
+                                        <?php if ($row['status'] === 'signed' && !empty($row['signed_file_path'])): ?>
+                                            <a href="<?php echo htmlspecialchars($row['signed_file_path']); ?>" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">View Signed Document</a>
+                                        <?php elseif (!empty($row['drive_link'])): ?>
+                                            <a href="<?php echo htmlspecialchars($row['drive_link']); ?>" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">View on Google Drive</a>
+                                        <?php else: ?>
+                                            <?php $file_name = basename($row['file_path']); ?>
+                                            <a href="<?php echo htmlspecialchars($row['file_path']); ?>" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline"><?php echo htmlspecialchars($file_name); ?></a>
+                                        <?php endif; ?>
                                     </td>
                                     <td class="py-4 px-6"><?php echo htmlspecialchars($row['requirements']); ?></td>
                                     <td class="py-4 px-6"><?php echo htmlspecialchars($row['description']); ?></td>
@@ -128,7 +128,7 @@ $result = $stmt->get_result();
                 // Create URL to the document editor page, considering the signeasex root folder
                 const signerUrl = new URL(window.location.pathname, window.location.origin);
                 // Replace the current PHP file with the path to doc_editor/index.html
-                const editorPath = signerUrl.pathname.replace('recipient_documents.php', 'doc_editor/index.html');
+                const editorPath = signerUrl.pathname.replace('documents_to_sign.php', 'doc_editor/index.html');
                 const finalUrl = new URL(editorPath, window.location.origin);
                 
                 // Store the document path in sessionStorage
