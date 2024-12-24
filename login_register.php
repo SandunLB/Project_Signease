@@ -49,7 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['login'])) {
                   $log_stmt->execute();
                   $log_stmt->close();
 
-                  header("Location: " . ($user['role'] == 'admin' ? 'admin-dashboard.php' : 'dashboard.php'));
+                  header("Location: " . ($user['role'] == 'admin' ? 'dashboard.php' : 'dashboard.php'));
                   exit();
               } else {
                   $message = 'Your account is pending approval. Please wait for admin confirmation.';
@@ -93,6 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
       $message_type = 'error';
   } else {
       $hashed_password = password_hash($register_data['password'], PASSWORD_BCRYPT);
+      $status = 'pending'; // Added status variable
 
       $conn->begin_transaction();
 
@@ -106,8 +107,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
               throw new Exception("Email already exists. Please use a different email.");
           }
 
-          $stmt1 = $conn->prepare("INSERT INTO users (username, email, password, nic, position, faculty, mobile, employee_number, name, role, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')");
-          $stmt1->bind_param("ssssssssss", $register_data['name'], $register_data['email'], $hashed_password, $register_data['nic'], $register_data['position'], $register_data['faculty'], $register_data['mobile'], $register_data['employee_number'], $register_data['name'], $register_data['role']);
+          $stmt1 = $conn->prepare("INSERT INTO users (username, email, password, nic, position, faculty, mobile, employee_number, name, role, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+          $stmt1->bind_param("sssssssssss", $register_data['name'], $register_data['email'], $hashed_password, $register_data['nic'], $register_data['position'], $register_data['faculty'], $register_data['mobile'], $register_data['employee_number'], $register_data['name'], $register_data['role'], $status); // Updated bind_param
           $stmt1->execute();
           $user_id = $stmt1->insert_id;
 
@@ -222,7 +223,7 @@ $conn->close();
           <div class="front w-full h-full bg-white dark:bg-gray-800">
               <div class="flex flex-col md:flex-row h-full">
                   <div class="w-full md:w-1/2 p-8 overflow-y-auto">
-                      <img src="imgs/logo.jpg" alt="Logo" class="w-64 mb-8">
+                      <img src="imgs/logo.png" alt="Logo" class="w-64 mb-8">
                       <h2 class="text-2xl font-semibold mb-6 relative dark:text-white">Login</h2>
                       <form action="login_register.php" method="post" class="space-y-4">
                           <div class="relative">

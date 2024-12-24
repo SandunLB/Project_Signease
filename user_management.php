@@ -1,6 +1,6 @@
 <?php
-include 'admin_sidebar.php';
-// admin_sidebar.php includes config.php and session.php
+include 'sidebar.php';
+// sidebar.php includes config.php and session.php
 
 // Check if user is logged in and is an admin
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
