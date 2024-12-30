@@ -4,123 +4,126 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document Signer</title>
-  <script type="module" crossorigin src="./assets/index-DILDjyVd.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-Cr4oDKjb.css">
+    <style>
+        .app-container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 350px;
+            overflow-y: auto;
+            padding: 1.5rem;
+            background-color: #f8fafc;
+            border-right: 1px solid #e2e8f0;
+        }
+        .main-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .pdf-container {
+            flex-grow: 1;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background-color: #f1f5f9;
+            padding: 2rem;
+        }
+        #pdf-viewer {
+            max-width: 880px;
+            width: 100%;
+            height: auto;
+            margin: 0 auto;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .tools-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            padding: 1rem;
+            background-color: #ffffff;
+            border-top: 1px solid #e2e8f0;
+        }
+        .signature-pad-container {
+            height: 250px;
+            margin-bottom: 1rem;
+        }
+        #signature-pad {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+  <script type="module" crossorigin src="./assets/index-DiIK2bLq.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-CdV-LjCx.css">
 </head>
-<body class="bg-gray-100 min-h-screen p-4">
-    <div class="max-w-5xl mx-auto">
-        <!-- Header -->
-        <header class="mb-6">
-            <h1 class="text-3xl font-bold text-gray-800">Document Signer</h1>
-            <p class="text-gray-600">Upload a PDF, add your signature, and download the signed document.</p>
-        </header>
+<body class="bg-gray-100">
+    <div class="app-container">
+        <!-- Left Sidebar -->
+        <aside class="sidebar">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">Document Signer</h1>
+            <p class="text-gray-600 mb-6">Upload a PDF, add your signature, and download the signed document.</p>
+            
+            <section class="mb-6">
+                <h2 class="text-lg font-semibold mb-2">Upload Document</h2>
+                <input type="file" id="document-upload" accept="application/pdf" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+            </section>
+
+            <section class="mb-6">
+                <h2 class="text-lg font-semibold mb-2">Draw Signature</h2>
+                <div class="border rounded-lg p-3 bg-white shadow-inner">
+                    <div class="signature-pad-container mb-3">
+                        <canvas id="signature-pad" class="border rounded-lg bg-white"></canvas>
+                    </div>
+                    <div class="flex justify-between gap-3">
+                        <button id="save-signature" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Add to Document</button>
+                        <button id="clear-signature" class="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">Clear</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="mb-6">
+                <h2 class="text-lg font-semibold mb-2">Add Stamp</h2>
+                <input type="file" id="stamp-upload" accept="image/*" class="block w-full text-sm text-gray-500 mb-3 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                <button id="add-stamp" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Add Stamp</button>
+            </section>
+
+            <button id="download-doc" class="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold shadow-lg">Download Signed Document</button>
+        </aside>
 
         <!-- Main Content -->
-        <main class="space-y-6">
-            <!-- Upload Section -->
-            <section class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-xl font-semibold mb-4">Upload Document</h2>
-                <input type="file" 
-                       id="document-upload" 
-                       accept="application/pdf"
-                       class="block w-full text-sm text-gray-500
-                              file:mr-4 file:py-2 file:px-4
-                              file:rounded-full file:border-0
-                              file:text-sm file:font-semibold
-                              file:bg-blue-50 file:text-blue-700
-                              hover:file:bg-blue-100
-                              cursor-pointer">
-            </section>
-
-            <!-- PDF Viewer -->
-            <section class="bg-white rounded-lg shadow p-6">
-                <div id="pdf-container" class="mb-4">
-                    <div id="pdf-viewer" class="border rounded-lg min-h-[600px] bg-gray-50">
-                        <!-- PDF will be rendered here -->
-                    </div>
+        <main class="main-content">
+            <div class="pdf-container">
+                <div id="pdf-viewer" class="bg-white rounded-lg">
+                    <!-- PDF will be rendered here -->
+                </div>
+            </div>
+            
+            <!-- Tools Container -->
+            <div class="tools-container">
+                <div class="flex items-center justify-center">
+                    <button id="prev-page" class="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors mr-3">Previous</button>
+                    <span id="page-num" class="text-gray-700 font-medium">Page 1 of 1</span>
+                    <button id="next-page" class="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors ml-3">Next</button>
                 </div>
                 
-                <!-- Page Controls -->
-                <div class="flex items-center justify-center gap-4 mt-4">
-                    <button id="prev-page" 
-                            class="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
-                        Previous
-                    </button>
-                    <span id="page-num" class="text-gray-700 font-medium">Page 1 of 1</span>
-                    <button id="next-page" 
-                            class="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
-                        Next
-                    </button>
+                <div class="flex items-center">
+                    <input type="datetime-local" id="date-time-picker" class="border rounded p-2 text-sm mr-2 flex-grow">
+                    <button id="add-date-time" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Add Date & Time</button>
                 </div>
-            </section>
-
-            <!-- Signature Pad -->
-            <section class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-xl font-semibold mb-4">Draw Signature</h2>
-                <div class="border rounded-lg p-4 bg-gray-50">
-                    <canvas id="signature-pad" 
-                            class="border rounded-lg w-full h-48 mb-4 bg-white shadow-inner">
-                    </canvas>
-                    <div class="flex justify-center gap-4">
-                        <button id="save-signature" 
-                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                            Add to Document
-                        </button>
-                        <button id="clear-signature" 
-                                class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
-                            Clear
-                        </button>
-                    </div>
+                
+                <div class="flex items-center">
+                    <input type="text" id="text-input" placeholder="Enter text" class="border rounded p-2 text-sm mr-2 flex-grow">
+                    <button id="add-text" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Add Text</button>
                 </div>
-            </section>
-
-            <!-- Date & Time Picker -->
-            <section class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-xl font-semibold mb-4">Add Date & Time</h2>
-                <input type="datetime-local" id="date-time-picker" class="border rounded p-2 w-full mb-4">
-                <button id="add-date-time" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                    Add Date & Time
-                </button>
-            </section>
-
-            <!-- Stamp Upload -->
-            <section class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-xl font-semibold mb-4">Add Stamp</h2>
-                <input type="file" id="stamp-upload" accept="image/*" class="block w-full text-sm text-gray-500 mb-4
-                       file:mr-4 file:py-2 file:px-4
-                       file:rounded-full file:border-0
-                       file:text-sm file:font-semibold
-                       file:bg-blue-50 file:text-blue-700
-                       hover:file:bg-blue-100
-                       cursor-pointer">
-                <button id="add-stamp" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                    Add Stamp
-                </button>
-            </section>
-
-            <!-- Text Input -->
-            <section class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-xl font-semibold mb-4">Add Text</h2>
-                <input type="text" id="text-input" placeholder="Enter text" class="border rounded p-2 w-full mb-4">
-                <button id="add-text" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                    Add Text
-                </button>
-            </section>
-
-            <!-- Download Button -->
-            <section class="flex justify-center">
-                <button id="download-doc" 
-                        class="px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors 
-                               font-semibold shadow-lg">
-                    Download Signed Document
-                </button>
-            </section>
+            </div>
         </main>
     </div>
 
     <!-- Loading Overlay -->
-    <div id="loading-overlay" 
-         class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
         <div class="bg-white p-8 rounded-lg shadow-xl">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
             <p class="mt-4 text-gray-700 text-center font-medium">Processing...</p>
