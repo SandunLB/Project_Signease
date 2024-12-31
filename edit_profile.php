@@ -83,6 +83,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Profile - SignEase</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#8B0000',
+                        secondary: '#FFA500',
+                    }
+                }
+            }
+        }
+    </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 dark:bg-gray-900">
@@ -91,13 +104,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Edit Profile</h1>
             
             <?php if (isset($success_message)): ?>
-                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4" role="alert">
+                <div class="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-4 dark:bg-green-800 dark:border-green-600 dark:text-green-200" role="alert">
                     <p><?php echo $success_message; ?></p>
                 </div>
             <?php endif; ?>
 
             <?php if (isset($error_message)): ?>
-                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+                <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4 dark:bg-red-800 dark:border-red-600 dark:text-red-200" role="alert">
                     <p><?php echo $error_message; ?></p>
                 </div>
             <?php endif; ?>
@@ -113,7 +126,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" for="email">
                         Email (Cannot be changed)
                     </label>
-                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="email" type="email" value="<?php echo htmlspecialchars($user['email']); ?>" disabled>
+                    <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline bg-gray-100 dark:bg-gray-600" id="email" type="email" value="<?php echo htmlspecialchars($user['email']); ?>" disabled>
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" for="mobile">
@@ -153,7 +166,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <input class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 dark:bg-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="confirm_password" type="password" name="confirm_password">
                 </div>
                 <div class="flex items-center justify-between">
-                    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" type="submit">
+                    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline dark:bg-blue-600 dark:hover:bg-blue-800" type="submit">
                         Update Profile
                     </button>
                 </div>
