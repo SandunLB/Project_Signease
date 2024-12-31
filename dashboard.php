@@ -138,6 +138,19 @@ $conn->close();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - SignEase</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#8B0000',
+                        secondary: '#FFA500',
+                    }
+                }
+            }
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
@@ -145,7 +158,7 @@ $conn->close();
         .animate__animated { animation-duration: 0.5s; }
     </style>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
     <div class="p-4 sm:ml-64">
         <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
             <h1 class="text-3xl font-semibold mb-6 animate__animated animate__fadeIn">Welcome, <?php echo htmlspecialchars($user['name']); ?>!</h1>
@@ -153,36 +166,36 @@ $conn->close();
             <!-- Summary Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <?php if ($user['role'] === 'admin'): ?>
-                <div class="bg-white p-6 rounded-lg shadow-md animate__animated animate__fadeInUp">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeInUp">
                     <h3 class="text-xl font-semibold mb-2">Total Users</h3>
                     <p class="text-3xl font-bold"><?php echo $totalUsers; ?></p>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md animate__animated animate__fadeInUp" style="animation-delay: 0.1s;">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeInUp" style="animation-delay: 0.1s;">
                     <h3 class="text-xl font-semibold mb-2">Total Documents</h3>
                     <p class="text-3xl font-bold"><?php echo $totalDocuments; ?></p>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md animate__animated animate__fadeInUp" style="animation-delay: 0.2s;">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeInUp" style="animation-delay: 0.2s;">
                     <h3 class="text-xl font-semibold mb-2">Signed Documents</h3>
                     <p class="text-3xl font-bold"><?php echo $totalSignedDocuments; ?></p>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md animate__animated animate__fadeInUp" style="animation-delay: 0.3s;">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeInUp" style="animation-delay: 0.3s;">
                     <h3 class="text-xl font-semibold mb-2">Total Messages</h3>
                     <p class="text-3xl font-bold"><?php echo $totalMessages; ?></p>
                 </div>
                 <?php else: ?>
-                <div class="bg-white p-6 rounded-lg shadow-md animate__animated animate__fadeInUp">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeInUp">
                     <h3 class="text-xl font-semibold mb-2">Your Documents</h3>
                     <p class="text-3xl font-bold"><?php echo $userDocuments; ?></p>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md animate__animated animate__fadeInUp" style="animation-delay: 0.1s;">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeInUp" style="animation-delay: 0.1s;">
                     <h3 class="text-xl font-semibold mb-2">Your Signed Documents</h3>
                     <p class="text-3xl font-bold"><?php echo $userSignedDocuments; ?></p>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md animate__animated animate__fadeInUp" style="animation-delay: 0.2s;">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeInUp" style="animation-delay: 0.2s;">
                     <h3 class="text-xl font-semibold mb-2">Your Pending Documents</h3>
                     <p class="text-3xl font-bold"><?php echo $userPendingDocuments; ?></p>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md animate__animated animate__fadeInUp" style="animation-delay: 0.3s;">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeInUp" style="animation-delay: 0.3s;">
                     <h3 class="text-xl font-semibold mb-2">Your Messages</h3>
                     <p class="text-3xl font-bold"><?php echo $userMessages; ?></p>
                 </div>
@@ -192,32 +205,32 @@ $conn->close();
             <!-- Charts -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 <?php if ($user['role'] === 'admin'): ?>
-                <div class="bg-white p-6 rounded-lg shadow-md animate__animated animate__fadeIn">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn">
                     <h3 class="text-xl font-semibold mb-4">Monthly User Registrations</h3>
                     <canvas id="userChart"></canvas>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.1s;">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.1s;">
                     <h3 class="text-xl font-semibold mb-4">Monthly Document Activity</h3>
                     <canvas id="documentChart"></canvas>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.2s;">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.2s;">
                     <h3 class="text-xl font-semibold mb-4">Document Status Distribution</h3>
                     <canvas id="documentTypesChart"></canvas>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.3s;">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.3s;">
                     <h3 class="text-xl font-semibold mb-4">Monthly Message Activity</h3>
                     <canvas id="messageChart"></canvas>
                 </div>
                 <?php else: ?>
-                <div class="bg-white p-6 rounded-lg shadow-md animate__animated animate__fadeIn">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn">
                     <h3 class="text-xl font-semibold mb-4">Your Monthly Document Activity</h3>
                     <canvas id="userDocumentChart"></canvas>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.1s;">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.1s;">
                     <h3 class="text-xl font-semibold mb-4">Your Document Status Distribution</h3>
                     <canvas id="userDocumentStatusChart"></canvas>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.2s;">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.2s;">
                     <h3 class="text-xl font-semibold mb-4">Your Monthly Message Activity</h3>
                     <canvas id="userMessageChart"></canvas>
                 </div>
@@ -227,11 +240,11 @@ $conn->close();
             <?php if ($user['role'] === 'admin'): ?>
             <!-- Admin-only sections -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                <div class="bg-white p-6 rounded-lg shadow-md animate__animated animate__fadeIn">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn">
                     <h3 class="text-xl font-semibold mb-4">Top Users by Document Count</h3>
                     <div class="overflow-x-auto">
-                        <table class="min-w-full bg-white">
-                            <thead class="bg-gray-100">
+                        <table class="min-w-full bg-white dark:bg-gray-800">
+                            <thead class="bg-gray-100 dark:bg-gray-700">
                                 <tr>
                                     <th class="py-2 px-4 text-left">User</th>
                                     <th class="py-2 px-4 text-left">Document Count</th>
@@ -239,7 +252,7 @@ $conn->close();
                             </thead>
                             <tbody>
                                 <?php foreach ($topUsers as $topUser): ?>
-                                <tr>
+                                <tr class="border-b dark:border-gray-700">
                                     <td class="py-2 px-4"><?php echo htmlspecialchars($topUser['name']); ?></td>
                                     <td class="py-2 px-4"><?php echo $topUser['document_count']; ?></td>
                                 </tr>
@@ -248,11 +261,11 @@ $conn->close();
                         </table>
                     </div>
                 </div>
-                <div class="bg-white p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.1s;">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.1s;">
                     <h3 class="text-xl font-semibold mb-4">User Activity Trends</h3>
                     <div class="overflow-x-auto">
-                        <table class="min-w-full bg-white">
-                            <thead class="bg-gray-100">
+                        <table class="min-w-full bg-white dark:bg-gray-800">
+                            <thead class="bg-gray-100 dark:bg-gray-700">
                                 <tr>
                                     <th class="py-2 px-4 text-left">User</th>
                                     <th class="py-2 px-4 text-left">Documents</th>
@@ -262,7 +275,7 @@ $conn->close();
                             </thead>
                             <tbody>
                                 <?php foreach ($userActivityTrends as $activity): ?>
-                                <tr>
+                                <tr class="border-b dark:border-gray-700">
                                     <td class="py-2 px-4"><?php echo htmlspecialchars($activity['name']); ?></td>
                                     <td class="py-2 px-4"><?php echo $activity['document_count']; ?></td>
                                     <td class="py-2 px-4"><?php echo $activity['message_count']; ?></td>
@@ -277,11 +290,11 @@ $conn->close();
             <?php endif; ?>
 
             <!-- Recent Activities -->
-            <div class="bg-white p-6 rounded-lg shadow-md mb-8 animate__animated animate__fadeIn">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-8 animate__animated animate__fadeIn">
                 <h3 class="text-xl font-semibold mb-4">Recent Activities</h3>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full bg-white">
-                        <thead class="bg-gray-100">
+                    <table class="min-w-full bg-white dark:bg-gray-800">
+                        <thead class="bg-gray-100 dark:bg-gray-700">
                             <tr>
                                 <th class="py-2 px-4 text-left">User</th>
                                 <th class="py-2 px-4 text-left">Document</th>
@@ -291,7 +304,7 @@ $conn->close();
                         </thead>
                         <tbody>
                             <?php foreach ($recentActivities as $activity): ?>
-                            <tr>
+                            <tr class="border-b dark:border-gray-700">
                                 <td class="py-2 px-4"><?php echo htmlspecialchars($activity['name']); ?></td>
                                 <td class="py-2 px-4"><?php echo htmlspecialchars(basename($activity['file_path'])); ?></td>
                                 <td class="py-2 px-4"><?php echo ucfirst($activity['status']); ?></td>
@@ -304,11 +317,11 @@ $conn->close();
             </div>
 
             <!-- Recent Messages -->
-            <div class="bg-white p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.1s;">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.1s;">
                 <h3 class="text-xl font-semibold mb-4">Recent Messages</h3>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full bg-white">
-                        <thead class="bg-gray-100">
+                    <table class="min-w-full bg-white dark:bg-gray-800">
+                        <thead class="bg-gray-100 dark:bg-gray-700">
                             <tr>
                                 <th class="py-2 px-4 text-left">Sender</th>
                                 <th class="py-2 px-4 text-left">Receiver</th>
@@ -318,7 +331,7 @@ $conn->close();
                         </thead>
                         <tbody>
                             <?php foreach ($recentMessages as $message): ?>
-                            <tr>
+                            <tr class="border-b dark:border-gray-700">
                                 <td class="py-2 px-4"><?php echo htmlspecialchars($message['sender_name']); ?></td>
                                 <td class="py-2 px-4"><?php echo htmlspecialchars($message['receiver_name']); ?></td>
                                 <td class="py-2 px-4"><?php echo htmlspecialchars(substr($message['message'], 0, 50)) . (strlen($message['message']) > 50 ? '...' : ''); ?></td>
@@ -333,6 +346,29 @@ $conn->close();
     </div>
 
     <script>
+    function getChartConfig(isDarkMode) {
+        return {
+            color: isDarkMode ? '#fff' : '#666',
+            borderColor: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+            grid: {
+                color: isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+            }
+        };
+    }
+
+    function updateChartTheme(chart, isDarkMode) {
+        const config = getChartConfig(isDarkMode);
+        chart.options.scales.x.ticks.color = config.color;
+        chart.options.scales.y.ticks.color = config.color;
+        chart.options.scales.x.grid.color = config.grid.color;
+        chart.options.scales.y.grid.color = config.grid.color;
+        chart.options.plugins.legend.labels.color = config.color;
+        chart.update();
+    }
+
+    const isDarkMode = document.documentElement.classList.contains('dark');
+    const chartConfig = getChartConfig(isDarkMode);
+
     <?php if ($user['role'] === 'admin'): ?>
     // Admin Charts
     var userCtx = document.getElementById('userChart').getContext('2d');
@@ -351,8 +387,19 @@ $conn->close();
         options: {
             responsive: true,
             scales: {
+                x: {
+                    ticks: { color: chartConfig.color },
+                    grid: { color: chartConfig.grid.color }
+                },
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    ticks: { color: chartConfig.color },
+                    grid: { color: chartConfig.grid.color }
+                }
+            },
+            plugins: {
+                legend: {
+                    labels: { color: chartConfig.color }
                 }
             },
             animation: {
@@ -385,8 +432,19 @@ $conn->close();
         options: {
             responsive: true,
             scales: {
+                x: {
+                    ticks: { color: chartConfig.color },
+                    grid: { color: chartConfig.grid.color }
+                },
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    ticks: { color: chartConfig.color },
+                    grid: { color: chartConfig.grid.color }
+                }
+            },
+            plugins: {
+                legend: {
+                    labels: { color: chartConfig.color }
                 }
             },
             animation: {
@@ -417,10 +475,12 @@ $conn->close();
             plugins: {
                 legend: {
                     position: 'right',
+                    labels: { color: chartConfig.color }
                 },
                 title: {
                     display: true,
-                    text: 'Document Status Distribution'
+                    text: 'Document Status Distribution',
+                    color: chartConfig.color
                 }
             },
             animation: {
@@ -446,8 +506,19 @@ $conn->close();
         options: {
             responsive: true,
             scales: {
+                x: {
+                    ticks: { color: chartConfig.color },
+                    grid: { color: chartConfig.grid.color }
+                },
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    ticks: { color: chartConfig.color },
+                    grid: { color: chartConfig.grid.color }
+                }
+            },
+            plugins: {
+                legend: {
+                    labels: { color: chartConfig.color }
                 }
             },
             animation: {
@@ -481,8 +552,19 @@ $conn->close();
         options: {
             responsive: true,
             scales: {
+                x: {
+                    ticks: { color: chartConfig.color },
+                    grid: { color: chartConfig.grid.color }
+                },
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    ticks: { color: chartConfig.color },
+                    grid: { color: chartConfig.grid.color }
+                }
+            },
+            plugins: {
+                legend: {
+                    labels: { color: chartConfig.color }
                 }
             },
             animation: {
@@ -511,10 +593,12 @@ $conn->close();
             plugins: {
                 legend: {
                     position: 'right',
+                    labels: { color: chartConfig.color }
                 },
                 title: {
                     display: true,
-                    text: 'Your Document Status Distribution'
+                    text: 'Your Document Status Distribution',
+                    color: chartConfig.color
                 }
             },
             animation: {
@@ -540,8 +624,19 @@ $conn->close();
         options: {
             responsive: true,
             scales: {
+                x: {
+                    ticks: { color: chartConfig.color },
+                    grid: { color: chartConfig.grid.color }
+                },
                 y: {
-                    beginAtZero: true
+                    beginAtZero: true,
+                    ticks: { color: chartConfig.color },
+                    grid: { color: chartConfig.grid.color }
+                }
+            },
+            plugins: {
+                legend: {
+                    labels: { color: chartConfig.color }
                 }
             },
             animation: {
@@ -565,6 +660,24 @@ $conn->close();
     animatedElements.forEach(element => {
         observer.observe(element);
     });
+
+    // Function to update chart themes
+    function updateChartsTheme(isDark) {
+        const charts = [
+            <?php if ($user['role'] === 'admin'): ?>
+            userChart, docChart, docTypesChart, messageChart
+            <?php else: ?>
+            userDocChart, statusChart, userMessageChart
+            <?php endif; ?>
+        ];
+        charts.forEach(chart => updateChartTheme(chart, isDark));
+    }
+
+    // Listen for theme changes
+    window.addEventListener('themeChanged', function(e) {
+        updateChartsTheme(e.detail.isDarkMode);
+    });
     </script>
+    <script src="theme.js"></script>
 </body>
 </html>
