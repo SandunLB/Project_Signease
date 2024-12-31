@@ -61,98 +61,114 @@ function renderMenuItem($item, $isAdmin) {
 }
 ?>
 
-<div id="sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0">
-    <div class="h-full px-3 py-4 overflow-y-auto bg-gray-50 dark:bg-gray-800">
-        <div class="flex flex-col items-center justify-center mb-5 pb-3 border-b border-gray-200 dark:border-gray-700">
-            <?php if ($user['role'] === 'admin'): ?>
-                <div class="w-16 h-16 bg-indigo-500 rounded-full flex items-center justify-center mb-2">
-                    <i class="fas fa-user-shield text-3xl text-white"></i>
-                </div>
-                <span class="text-xl font-bold text-indigo-500 dark:text-indigo-400">SignEase Admin</span>
-            <?php else: ?>
-                <span class="text-xl font-semibold text-gray-800 dark:text-white">SignEase</span>
-            <?php endif; ?>
-            <button id="sidebarToggle" class="mt-2 text-gray-500 focus:outline-none sm:hidden">
-                <i class="fas fa-bars"></i>
-            </button>
-        </div>
-        <ul class="space-y-2 font-medium">
-            <?php
-            foreach ($menuItems as $item) {
-                echo renderMenuItem($item, $user['role'] === 'admin');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignEase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        // Add any custom colors here
+                    }
+                }
             }
-            ?>
-            <li>
-                <button id="themeToggle" class="flex items-center w-full p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                    <i id="themeIcon" class="fas fa-sun w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
-                    <span class="ml-3">Toggle Theme</span>
+        }
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="theme.js"></script>
+</head>
+<body>
+    <div id="sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0">
+        <div class="h-full px-3 py-4 overflow-y-auto bg-gray-50 dark:bg-gray-800">
+            <div class="flex flex-col items-center justify-center mb-5 pb-3 border-b border-gray-200 dark:border-gray-700">
+                <?php if ($user['role'] === 'admin'): ?>
+                    <div class="w-16 h-16 bg-indigo-500 rounded-full flex items-center justify-center mb-2">
+                        <i class="fas fa-user-shield text-3xl text-white"></i>
+                    </div>
+                    <span class="text-xl font-bold text-indigo-500 dark:text-indigo-400">SignEase Admin</span>
+                <?php else: ?>
+                    <span class="text-xl font-semibold text-gray-800 dark:text-white">SignEase</span>
+                <?php endif; ?>
+                <button id="sidebarToggle" class="mt-2 text-gray-500 focus:outline-none sm:hidden">
+                    <i class="fas fa-bars"></i>
                 </button>
-            </li>
-        </ul>
-        <div class="pt-4 mt-4 space-y-2 font-medium border-t border-gray-200 dark:border-gray-700">
-            <div id="userProfileTrigger" class="flex items-center p-2 text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                <div class="flex-shrink-0">
-                    <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center">
-                        <span class="text-xl font-semibold text-white"><?php echo strtoupper(substr($user['name'], 0, 1)); ?></span>
+            </div>
+            <ul class="space-y-2 font-medium">
+                <?php
+                foreach ($menuItems as $item) {
+                    echo renderMenuItem($item, $user['role'] === 'admin');
+                }
+                ?>
+                <li>
+                    <button id="themeToggle" class="flex items-center w-full p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
+                        <i id="themeIcon" class="fas fa-sun w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
+                        <span class="ml-3">Toggle Theme</span>
+                    </button>
+                </li>
+            </ul>
+            <div class="pt-4 mt-4 space-y-2 font-medium border-t border-gray-200 dark:border-gray-700">
+                <div id="userProfileTrigger" class="flex items-center p-2 text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <div class="flex-shrink-0">
+                        <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center">
+                            <span class="text-xl font-semibold text-white"><?php echo strtoupper(substr($user['name'], 0, 1)); ?></span>
+                        </div>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-semibold"><?php echo htmlspecialchars($user['name']); ?></p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400"><?php echo htmlspecialchars($user['email']); ?></p>
                     </div>
                 </div>
-                <div class="ml-3">
-                    <p class="text-sm font-semibold"><?php echo htmlspecialchars($user['name']); ?></p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400"><?php echo htmlspecialchars($user['email']); ?></p>
+                <div id="userProfileMenu" class="hidden ml-2">
+                    <a href="edit_profile.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
+                        <i class="fas fa-user-edit w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
+                        <span class="ml-3">Edit Profile</span>
+                    </a>
                 </div>
-            </div>
-            <div id="userProfileMenu" class="hidden ml-2">
-                <a href="edit_profile.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                    <i class="fas fa-user-edit w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
-                    <span class="ml-3">Edit Profile</span>
+                <a href="logout.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
+                    <i class="fas fa-sign-out-alt w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
+                    <span class="ml-3">Logout</span>
                 </a>
             </div>
-            <a href="logout.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                <i class="fas fa-sign-out-alt w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white"></i>
-                <span class="ml-3">Logout</span>
-            </a>
         </div>
     </div>
-</div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const userProfileTrigger = document.getElementById('userProfileTrigger');
-    const userProfileMenu = document.getElementById('userProfileMenu');
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const userProfileTrigger = document.getElementById('userProfileTrigger');
+            const userProfileMenu = document.getElementById('userProfileMenu');
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
 
-    userProfileTrigger.addEventListener('click', function() {
-        userProfileMenu.classList.toggle('hidden');
-    });
+            userProfileTrigger.addEventListener('click', function() {
+                userProfileMenu.classList.toggle('hidden');
+            });
 
-    // Close the menu when clicking outside
-    document.addEventListener('click', function(event) {
-        if (!userProfileTrigger.contains(event.target) && !userProfileMenu.contains(event.target)) {
-            userProfileMenu.classList.add('hidden');
-        }
-    });
+            function updateThemeIcon(theme) {
+                themeIcon.className = theme === 'dark'
+                    ? 'fas fa-moon w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white'
+                    : 'fas fa-sun w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white';
+            }
 
-    // Toggle submenu visibility
-    document.querySelectorAll('a:has(.fa-chevron-down)').forEach(function(el) {
-        el.addEventListener('click', function(e) {
-            e.preventDefault();
-            this.nextElementSibling.classList.toggle('hidden');
+            themeToggle.addEventListener('click', function() {
+                window.themeUtils.toggleTheme();
+            });
+
+            // Listen for theme changes
+            window.addEventListener('themeChanged', (event) => {
+                updateThemeIcon(event.detail);
+            });
+
+            // Initialize theme
+            window.themeUtils.initTheme();
+            updateThemeIcon(localStorage.getItem('theme'));
         });
-    });
+    </script>
+</body>
+</html>
 
-    // Theme toggle functionality
-    const themeToggle = document.getElementById('themeToggle');
-    const themeIcon = document.getElementById('themeIcon');
-    const htmlElement = document.documentElement;
-
-    themeToggle.addEventListener('click', function() {
-        htmlElement.classList.toggle('dark');
-        if (htmlElement.classList.contains('dark')) {
-            themeIcon.classList.remove('fa-sun');
-            themeIcon.classList.add('fa-moon');
-        } else {
-            themeIcon.classList.remove('fa-moon');
-            themeIcon.classList.add('fa-sun');
-        }
-    });
-});
-</script>

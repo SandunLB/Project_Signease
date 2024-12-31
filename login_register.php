@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
       $message_type = 'error';
   } else {
       $hashed_password = password_hash($register_data['password'], PASSWORD_BCRYPT);
-      $status = 'pending'; // Added status variable
+      $status = 'pending';
 
       $conn->begin_transaction();
 
@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['register'])) {
           }
 
           $stmt1 = $conn->prepare("INSERT INTO users (username, email, password, nic, position, faculty, mobile, employee_number, name, role, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
-          $stmt1->bind_param("sssssssssss", $register_data['name'], $register_data['email'], $hashed_password, $register_data['nic'], $register_data['position'], $register_data['faculty'], $register_data['mobile'], $register_data['employee_number'], $register_data['name'], $register_data['role'], $status); // Updated bind_param
+          $stmt1->bind_param("sssssssssss", $register_data['name'], $register_data['email'], $hashed_password, $register_data['nic'], $register_data['position'], $register_data['faculty'], $register_data['mobile'], $register_data['employee_number'], $register_data['name'], $register_data['role'], $status);
           $stmt1->execute();
           $user_id = $stmt1->insert_id;
 
@@ -199,15 +199,12 @@ $conn->close();
           animation: spin 0.3s linear;
       }
   </style>
+  <script>window.themeUtils.initTheme();</script>
+  <script src="theme.js"></script>
 </head>
 <body class="min-h-screen flex items-center justify-center p-6 bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
-  <button id="theme-toggle" class="fixed top-4 left-4 z-50 w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center transition-all duration-300 shadow-lg">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-6 h-6 text-yellow-500 hidden dark:block">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-      </svg>
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-6 h-6 text-gray-800 dark:hidden">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-      </svg>
+  <button id="themeToggle" class="fixed top-4 left-4 z-50 w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-800 flex items-center justify-center transition-all duration-300 shadow-lg">
+      <i id="themeIcon" class="fas fa-sun w-6 h-6 text-yellow-500 dark:text-gray-400"></i>
   </button>
   <?php if (!empty($message)): ?>
       <div id="notification" class="fixed top-5 left-1/2 transform -translate-x-1/2 p-4 rounded-md shadow-md z-50 
@@ -267,7 +264,7 @@ $conn->close();
                               <i class="fas fa-briefcase absolute left-3 top-1/2 transform -translate-y-1/2 text-primary dark:text-white"></i>
                               <select name="position" id="position" class="w-full p-2 pl-10 border-b-2 border-gray-300 focus:border-primary outline-none dark:bg-gray-700 dark:text-white dark:border-gray-600" required>
                                   <option value="" disabled <?php echo empty($register_data['position']) ? 'selected' : ''; ?>>Select position</option>
-                                  <option value="vc" <?php echo $register_data['position'] === 'vc' ? 'selected' : ''; ?>>VC</option>
+                                  <option value="option value="vc" <?php echo $register_data['position'] === 'vc' ? 'selected' : ''; ?>>VC</option>
                                   <option value="dvc" <?php echo $register_data['position'] === 'dvc' ? 'selected' : ''; ?>>DVC</option>
                                   <option value="dean" <?php echo $register_data['position'] === 'dean' ? 'selected' : ''; ?>>Dean</option>
                                   <option value="directors" <?php echo $register_data['position'] === 'directors' ? 'selected' : ''; ?>>Directors</option>
@@ -344,57 +341,56 @@ $conn->close();
   </div>
 
   <script>
-      document.getElementById('show-signup').addEventListener('click', function(e) {
-          e.preventDefault();
-          document.querySelector('.flip-container').classList.add('flip');
-      });
+    document.addEventListener('DOMContentLoaded', function() {
+        const flipContainer = document.querySelector('.flip-container');
+        const showSignupLink = document.getElementById('show-signup');
+        const showLoginLink = document.getElementById('show-login');
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const notification = document.getElementById('notification');
 
-      document.getElementById('show-login').addEventListener('click', function(e) {
-          e.preventDefault();
-          document.querySelector('.flip-container').classList.remove('flip');
-      });
+        showSignupLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            flipContainer.classList.add('flip');
+        });
 
-      // New notification hide functionality
-      document.addEventListener('DOMContentLoaded', function() {
-          var notification = document.getElementById('notification');
-          if (notification) {
-              setTimeout(function() {
-                  notification.classList.add('fade-out');
-                  setTimeout(function() {
-                      notification.style.display = 'none';
-                  }, 500);
-              }, 5000);
-          }
-      });
+        showLoginLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            flipContainer.classList.remove('flip');
+        });
 
-      // Theme toggle functionality
-      const themeToggle = document.getElementById('theme-toggle');
-      const html = document.documentElement;
+        if (notification) {
+            setTimeout(function() {
+                notification.classList.add('fade-out');
+                setTimeout(function() {
+                    notification.style.display = 'none';
+                }, 500);
+            }, 5000);
+        }
 
-      // Check for saved theme preference or use system preference
-      if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-          html.classList.add('dark');
-      } else {
-          html.classList.remove('dark');
-      }
+        function updateThemeIcon(theme) {
+            themeIcon.className = theme === 'dark'
+                ? 'fas fa-moon w-6 h-6 text-gray-400'
+                : 'fas fa-sun w-6 h-6 text-yellow-500';
+        }
 
-      // Toggle theme
-      themeToggle.addEventListener('click', () => {
-          html.classList.toggle('dark');
-          if (html.classList.contains('dark')) {
-              localStorage.theme = 'dark';
-          } else {
-              localStorage.theme = 'light';
-          }
-      });
+        themeToggle.addEventListener('click', () => {
+            window.themeUtils.toggleTheme();
+            themeToggle.classList.add('animate-spin');
+            setTimeout(() => {
+                themeToggle.classList.remove('animate-spin');
+            }, 300);
+        });
 
-      // Add animation to the toggle button
-      themeToggle.addEventListener('click', () => {
-          themeToggle.classList.add('animate-spin');
-          setTimeout(() => {
-              themeToggle.classList.remove('animate-spin');
-          }, 300);
-      });
+        // Listen for theme changes
+        window.addEventListener('themeChanged', (event) => {
+            updateThemeIcon(event.detail);
+        });
+
+        // Initialize theme
+        window.themeUtils.initTheme();
+        updateThemeIcon(localStorage.getItem('theme'));
+    });
   </script>
 </body>
 </html>
