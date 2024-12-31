@@ -152,6 +152,19 @@ if (!$is_admin) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $is_admin ? 'Insights Hub - Admin' : 'FAQs & Feedback'; ?> - SignEase</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#8B0000',
+                        secondary: '#FFA500',
+                    }
+                }
+            }
+        }
+    </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
         .tab-content {
@@ -234,13 +247,13 @@ if (!$is_admin) {
                     <?php if (empty($faqs)): ?>
                         <div class="text-center py-8">
                             <p class="text-gray-600 dark:text-gray-400 mb-4">No FAQs available. Add your first FAQ!</p>
-                            <button onclick="openFAQModal()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out transform hover:scale-105">
+                            <button onclick="openFAQModal()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out transform hover:scale-105 dark:bg-blue-600 dark:hover:bg-blue-700">
                                 <i class="fas fa-plus mr-2"></i>Add FAQ
                             </button>
                         </div>
                     <?php else: ?>
                         <div class="mb-4 text-right">
-                            <button onclick="openFAQModal()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out transform hover:scale-105">
+                            <button onclick="openFAQModal()" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300 ease-in-out transform hover:scale-105 dark:bg-blue-600 dark:hover:bg-blue-700">
                                 <i class="fas fa-plus mr-2"></i>Add FAQ
                             </button>
                         </div>
@@ -263,7 +276,7 @@ if (!$is_admin) {
                     <?php endif; ?>
                 <?php else: ?>
                     <div class="mb-4">
-                        <input type="text" id="faq-search" placeholder="Search FAQs..." class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <input type="text" id="faq-search" placeholder="Search FAQs..." class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400">
                     </div>
                     <?php if (empty($faqs)): ?>
                         <p class="text-gray-600 dark:text-gray-400">No FAQs available at the moment.</p>
@@ -309,7 +322,7 @@ if (!$is_admin) {
                                         <td class="py-4 px-6"><?php echo htmlspecialchars($feedback['created_at']); ?></td>
                                         <td class="py-4 px-6">
                                             <?php if ($feedback['attachment']): ?>
-                                                <a href="<?php echo htmlspecialchars($feedback['attachment']); ?>" target="_blank" class="text-blue-600 hover:underline">View</a>
+                                                <a href="<?php echo htmlspecialchars($feedback['attachment']); ?>" target="_blank" class="text-blue-600 hover:underline dark:text-blue-400">View</a>
                                             <?php else: ?>
                                                 N/A
                                             <?php endif; ?>
@@ -345,7 +358,7 @@ if (!$is_admin) {
                             <input type="file" id="attachment" name="attachment" accept="image/*" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-gray-300 leading-tight focus:outline-none focus:shadow-outline dark:bg-gray-700 dark:border-gray-600">
                         </div>
                         <div class="flex items-center justify-between">
-                            <button type="submit" name="submit_feedback" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105">
+                            <button type="submit" name="submit_feedback" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-300 ease-in-out transform hover:scale-105 dark:bg-blue-600 dark:hover:bg-blue-800">
                                 Submit Feedback
                             </button>
                         </div>
@@ -380,7 +393,7 @@ if (!$is_admin) {
                         </div>
                     </div>
                     <div class="px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                        <button type="submit" name="add_faq" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm transition duration-300 ease-in-out transform hover:scale-105">
+                        <button type="submit" name="add_faq" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm transition duration-300 ease-in-out transform hover:scale-105 dark:bg-blue-500 dark:hover:bg-blue-600">
                             Save
                         </button>
                         <button type="button" onclick="closeFAQModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm dark:bg-gray-600 dark:text-white dark:border-gray-500 dark:hover:bg-gray-700 transition duration-300 ease-in-out transform hover:scale-105">
@@ -397,7 +410,7 @@ if (!$is_admin) {
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
                 <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
                         Feedback Details
@@ -548,7 +561,7 @@ if (!$is_admin) {
             document.getElementById('feedbackMessage').textContent = `Message: ${feedback.message}`;
             document.getElementById('feedbackDate').textContent = `Date: ${feedback.created_at}`;
             document.getElementById('feedbackAttachment').innerHTML = feedback.attachment ? 
-                `Attachment: <a href="${feedback.attachment}" target="_blank" class="text-blue-600 hover:underline">View Attachment</a>` : 
+                `Attachment: <a href="${feedback.attachment}" target="_blank" class="text-blue-600 hover:underline dark:text-blue-400">View Attachment</a>` : 
                 'No attachment';
             document.getElementById('feedbackModal').classList.remove('hidden');
         }
