@@ -79,17 +79,17 @@ if (isset($_POST['generate_pdf'])) {
 
     class PDF extends FPDF {
         function Header() {
-            // Add logo
-            $this->Image('./imgs/logo2.png', 10, 6, 30);
-            // Arial bold 15
+            $this->Image('./imgs/logo3.png', 10, 8, 15); 
+            // Set font: Arial bold 15
             $this->SetFont('Arial', 'B', 15);
-            // Move to the right
-            $this->Cell(80);
-            // Title
-            $this->Cell(30, 10, 'SignEase Document Report', 0, 0, 'C');
+            // Move to the right for text alignment
+            $this->Cell(25); 
+            // Add title, centered
+            $this->Cell(130, 10, 'SignEase Document Report', 0, 0, 'C'); 
             // Line break
             $this->Ln(20);
         }
+        
 
         function Footer() {
             // Position at 1.5 cm from bottom
@@ -189,6 +189,9 @@ ob_end_flush();
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <style>
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -204,8 +207,56 @@ ob_end_flush();
             animation: slideDown 0.5s ease-out;
         }
     </style>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"}
+                    }
+                },
+                fontFamily: {
+                    'body': [
+                        'Inter', 
+                        'ui-sans-serif', 
+                        'system-ui', 
+                        '-apple-system', 
+                        'system-ui', 
+                        'Segoe UI', 
+                        'Roboto', 
+                        'Helvetica Neue', 
+                        'Arial', 
+                        'Noto Sans', 
+                        'sans-serif', 
+                        'Apple Color Emoji', 
+                        'Segoe UI Emoji', 
+                        'Segoe UI Symbol', 
+                        'Noto Color Emoji'
+                    ],
+                    'sans': [
+                        'Inter', 
+                        'ui-sans-serif', 
+                        'system-ui', 
+                        '-apple-system', 
+                        'system-ui', 
+                        'Segoe UI', 
+                        'Roboto', 
+                        'Helvetica Neue', 
+                        'Arial', 
+                        'Noto Sans', 
+                        'sans-serif', 
+                        'Apple Color Emoji', 
+                        'Segoe UI Emoji', 
+                        'Segoe UI Symbol', 
+                        'Noto Color Emoji'
+                    ]
+                }
+            }
+        }
+    </script>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900">
+<body class="bg-gray-50 dark:bg-gray-900">
     <div class="p-4 sm:ml-64">
         <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 animate-fadeIn">
             <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Reports</h1>
@@ -289,19 +340,19 @@ ob_end_flush();
                                         <?php
                                         switch($document['status']) {
                                             case 'sent':
-                                                echo 'bg-blue-100 text-blue-800';
+                                                echo 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
                                                 break;
                                             case 'pending':
-                                                echo 'bg-yellow-100 text-yellow-800';
+                                                echo 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
                                                 break;
                                             case 'signed':
-                                                echo 'bg-green-100 text-green-800';
+                                                echo 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
                                                 break;
                                             case 'completed':
-                                                echo 'bg-purple-100 text-purple-800';
+                                                echo 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
                                                 break;
                                             default:
-                                                echo 'bg-gray-100 text-gray-800';
+                                                echo 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
                                         }
                                         ?>">
                                         <?php echo ucfirst(htmlspecialchars($document['status'])); ?>
