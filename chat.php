@@ -127,6 +127,11 @@ if ($activeConversationId) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat - SignEase</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+    </style>
     <script>
         tailwind.config = {
             darkMode: 'class',

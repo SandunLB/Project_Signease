@@ -49,6 +49,11 @@ function getStatusClass($status) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Activity Log - SignEase</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+    </style>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -67,13 +72,7 @@ function getStatusClass($status) {
         [x-cloak] { display: none !important; }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900" x-data="{ darkMode: false }" x-init="
-    if (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        localStorage.setItem('darkMode', JSON.stringify(true));
-    }
-    darkMode = JSON.parse(localStorage.getItem('darkMode'));
-    $watch('darkMode', value => localStorage.setItem('darkMode', JSON.stringify(value)))
-" x-bind:class="{'dark': darkMode === true}">
+<body class="bg-gray-100 dark:bg-gray-900">
     <div class="p-4 sm:ml-64">
         <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
             <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Activity Log</h1>
