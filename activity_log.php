@@ -1,4 +1,5 @@
 <?php
+ob_start();
 include 'sidebar.php';
 // Note: sidebar.php already includes config.php and session.php, so we don't need to include them again
 
@@ -9,6 +10,45 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
+
+// Handle document download
+if (isset($_GET['download_document'])) {
+    $document_id = $_GET['download_document'];
+    
+    // Update document status to 'completed'
+    $update_sql = "UPDATE documents SET status = 'completed' WHERE id = ?";
+    $update_stmt = $conn->prepare($update_sql);
+    $update_stmt->bind_param("i", $document_id);
+    $update_stmt->execute();
+    
+    // Fetch the file path
+    $file_sql = "SELECT file_path FROM documents WHERE id = ?";
+    $file_stmt = $conn->prepare($file_sql);
+    $file_stmt->bind_param("i", $document_id);
+    $file_stmt->execute();
+    $file_result = $file_stmt->get_result();
+    $file_row = $file_result->fetch_assoc();
+    
+    if ($file_row) {
+        $file_path = $file_row['file_path'];
+        if (file_exists($file_path)) {
+            // Clear any output that might have been sent
+            ob_clean();
+            
+            // Set headers for file download
+            header("Content-Type: application/pdf");
+            header("Content-Disposition: attachment; filename=\"" . basename($file_path) . "\"");
+            header("Content-Length: " . filesize($file_path));
+            
+            // Output file contents
+            readfile($file_path);
+            exit;
+        } else {
+            echo "File not found.";
+        }
+    }
+}
+
 
 // Fetch sent documents
 $sent_sql = "SELECT d.id, d.file_path, d.drive_link, d.requirements, d.description, d.status, d.upload_date,
@@ -31,14 +71,13 @@ function getStatusClass($status) {
             return 'bg-yellow-500 text-white';
         case 'signed':
             return 'bg-green-500 text-white';
-        case 'received':
-            return 'bg-purple-500 text-white';
         case 'completed':
-            return 'bg-gray-500 text-white';
+            return 'bg-purple-500 text-white';
         default:
             return 'bg-gray-300 text-gray-700';
     }
 }
+
 
 ?>
 
@@ -85,6 +124,7 @@ function getStatusClass($status) {
                             <th scope="col" class="py-3 px-6">Document</th>
                             <th scope="col" class="py-3 px-6">Status</th>
                             <th scope="col" class="py-3 px-6">Date</th>
+                            <th scope="col" class="py-3 px-6">Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -116,6 +156,16 @@ function getStatusClass($status) {
                                     </span>
                                 </td>
                                 <td class="py-4 px-6"><?php echo htmlspecialchars($row['upload_date']); ?></td>
+                                <td class="py-4 px-6">
+                                    <?php if ($row['status'] === 'signed' || $row['status'] === 'completed'): ?>
+                                        <form method="get" action="">
+                                            <input type="hidden" name="download_document" value="<?php echo $row['id']; ?>">
+                                            <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded" onclick="event.stopPropagation(); setTimeout(function(){ location.reload(); }, 1000);">
+                                                <?php echo $row['status'] === 'completed' ? 'Download Again' : 'Download'; ?>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                         <?php endwhile; ?>
                     </tbody>
@@ -164,18 +214,17 @@ function getStatusClass($status) {
             const openModalRows = document.querySelectorAll('.open-modal');
             const closeModalButton = document.querySelector('.close-modal');
 
-            const statuses = ['sent', 'pending', 'signed', 'received', 'completed'];
+            const statuses = ['sent', 'pending', 'signed', 'completed'];
             const statusColors = {
                 'sent': 'bg-blue-500',
                 'pending': 'bg-yellow-500',
                 'signed': 'bg-green-500',
-                'received': 'bg-purple-500',
-                'completed': 'bg-gray-500'
+                'completed': 'bg-purple-500'
             };
 
             openModalRows.forEach(row => {
                 row.addEventListener('click', function(e) {
-                    if (e.target.tagName.toLowerCase() === 'a') return; // Don't open modal if clicking on the document link
+                    if (e.target.tagName.toLowerCase() === 'a' || e.target.tagName.toLowerCase() === 'button') return;
                     const docDetails = {
                         requirements: this.getAttribute('data-requirements'),
                         description: this.getAttribute('data-description'),
@@ -214,3 +263,5 @@ function getStatusClass($status) {
     <script src="theme.js"></script>
 </body>
 </html>
+<?php ob_end_flush(); ?>
+
