@@ -32,11 +32,13 @@ function getOrCreateConversation($conn, $user1Id, $user2Id) {
 function getUserConversations($conn, $userId) {
     $stmt = $conn->prepare("
         SELECT c.id, u.email, u.name,
-            (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id AND m.receiver_id = ? AND m.read = 0) as unread_count
+            (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id AND m.receiver_id = ? AND m.read = 0) as unread_count,
+            (SELECT message FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message,
+            (SELECT created_at FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) as last_message_time
         FROM conversations c
         JOIN users u ON (c.user1_id = u.id OR c.user2_id = u.id)
         WHERE (c.user1_id = ? OR c.user2_id = ?) AND u.id != ?
-        ORDER BY c.last_message_at DESC
+        ORDER BY last_message_time DESC
     ");
     $stmt->bind_param("iiii", $userId, $userId, $userId, $userId);
     $stmt->execute();
@@ -82,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $stmt->bind_param("i", $conversationId);
             $stmt->execute();
 
-            header("Location: chat.php?conversation_id=" . $conversationId);
+            echo json_encode(['success' => true, 'conversation_id' => $conversationId]);
             exit();
         }
     } elseif ($_POST['action'] === 'edit_message') {
@@ -127,30 +129,24 @@ if ($activeConversationId) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat - SignEase</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        * {
-            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-        }
-    </style>
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        primary: '#8B0000',
-                        secondary: '#FFA500',
+                        primary: {
+                            DEFAULT: '#880404',
+                            dark: '#a61b1b',
+                            light: '#880404',
+                        }
                     }
                 }
             }
         }
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    <style>
-        [x-cloak] { display: none !important; }
-    </style>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body class="bg-gray-100 dark:bg-gray-900">
     <div class="p-4 sm:ml-64">
@@ -164,7 +160,7 @@ if ($activeConversationId) {
                         <div class="p-4 border-b border-gray-200 dark:border-gray-700">
                             <h2 class="text-xl font-semibold text-gray-800 dark:text-white">Conversations</h2>
                         </div>
-                        <div class="overflow-y-auto h-full">
+                        <div class="overflow-y-auto h-full" id="conversation-list">
                             <?php foreach ($conversations as $conversation): ?>
                                 <a href="?conversation_id=<?= $conversation['id'] ?>" class="block p-4 hover:bg-gray-100 dark:hover:bg-gray-700 <?= $activeConversationId == $conversation['id'] ? 'bg-gray-200 dark:bg-gray-600' : '' ?>">
                                     <div class="flex justify-between items-center">
@@ -173,6 +169,8 @@ if ($activeConversationId) {
                                             <span class="bg-green-500 text-white dark:bg-green-600 dark:text-gray-100 rounded-full px-2 py-1 text-xs"><?= $conversation['unread_count'] ?></span>
                                         <?php endif; ?>
                                     </div>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 truncate"><?= htmlspecialchars($conversation['last_message']) ?></p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-500 mt-1"><?= date('M d, Y H:i', strtotime($conversation['last_message_time'])) ?></p>
                                 </a>
                             <?php endforeach; ?>
                         </div>
@@ -244,7 +242,7 @@ if ($activeConversationId) {
                 <div class="mt-2 px-7 py-3">
                     <form id="new-conversation-form">
                         <input type="hidden" name="action" value="send_message">
-                        <input type="email" name="receiver_email" placeholder="Enter email address" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required>
+                        <input type="email" name="receiver_email" placeholder="Enter email address" class="w-full px-3 py-2 borderborder-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required>
                         <input type="text" name="message" placeholder="Type a message" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg mt-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white" required>
                         <button type="submit" class="w-full mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700">Start Chat</button>
                     </form>
@@ -294,20 +292,39 @@ if ($activeConversationId) {
         $('#message-form').on('submit', function(e) {
             e.preventDefault();
             $.post('chat.php', $(this).serialize(), function(response) {
-                location.reload();
-            });
+                if (response.success) {
+                    location.reload();
+                }
+            }, 'json');
         });
 
         $('#new-conversation-form').on('submit', function(e) {
             e.preventDefault();
             $.post('chat.php', $(this).serialize(), function(response) {
-                location.reload();
-            });
+                if (response.success) {
+                    location.href = 'chat.php?conversation_id=' + response.conversation_id;
+                }
+            }, 'json');
         });
 
         // Auto-scroll to bottom of chat
         const chatMessages = document.getElementById('chat-messages');
         chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Periodically check for new messages
+        setInterval(function() {
+            if (window.location.search.includes('conversation_id')) {
+                $.get('chat.php' + window.location.search, function(data) {
+                    $('#chat-messages').html($(data).find('#chat-messages').html());
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                });
+            }
+            
+            // Update conversation list
+            $.get('chat.php', function(data) {
+                $('#conversation-list').html($(data).find('#conversation-list').html());
+            });
+        }, 5000);
     });
     </script>
     <script src="theme.js"></script>
