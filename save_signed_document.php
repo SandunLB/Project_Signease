@@ -32,7 +32,7 @@ if (!move_uploaded_file($_FILES['pdf']['tmp_name'], $filepath)) {
 
 // Update the database
 $user_id = $_SESSION['user_id'];
-$sql = "UPDATE documents SET status = 'signed', file_path = ? WHERE recipient_id = ? AND status = 'sent' LIMIT 1";
+$sql = "UPDATE documents SET status = 'signed', signed_file_path = ? WHERE recipient_id = ? AND (status = 'sent' OR status = 'pending') LIMIT 1";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("si", $filepath, $user_id);
 

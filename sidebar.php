@@ -10,22 +10,59 @@ $result = $stmt->get_result();
 $user = $result->fetch_assoc();
 $stmt->close();
 
+function getDocumentsToSignCount($userId) {
+    global $conn;
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM documents WHERE recipient_id = ? AND status = 'sent'");
+    $stmt->bind_param("i", $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $count = $result->fetch_row()[0];
+    $stmt->close();
+    return $count;
+}
+
+function getUnreadMessagesCount($userId) {
+    global $conn;
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM messages WHERE receiver_id = ? AND `read` = 0");
+    $stmt->bind_param("i", $userId);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $count = $result->fetch_row()[0];
+    $stmt->close();
+    return $count;
+}
+
+function getPendingUsersCount() {
+    global $conn;
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM users WHERE status = 'pending'");
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $count = $result->fetch_row()[0];
+    $stmt->close();
+    return $count;
+}
+
+// Fetch notification counts
+$documentsToSignCount = getDocumentsToSignCount($_SESSION['user_id']);
+$unreadMessagesCount = getUnreadMessagesCount($_SESSION['user_id']);
+$pendingUsersCount = $user['role'] === 'admin' ? getPendingUsersCount() : 0;
+
 // Define shared menu items
 $sharedMenuItems = [
     ['url' => 'dashboard.php', 'icon' => 'fas fa-tachometer-alt', 'text' => 'Dashboard'],
     ['url' => '#', 'icon' => 'fas fa-file-signature', 'text' => 'eSign', 'submenu' => [
         ['url' => 'upload_documents.php', 'text' => 'Document Upload'],
-        ['url' => 'documents_to_sign.php', 'text' => 'Documents to Sign'],
+        ['url' => 'documents_to_sign.php', 'text' => 'Documents to Sign', 'badge' => $documentsToSignCount],
     ]],
     ['url' => 'activity_log.php', 'icon' => 'fas fa-history', 'text' => 'Activity Log'],
     ['url' => 'insights_hub.php', 'icon' => 'fas fa-chart-line', 'text' => 'Insight Hub'],
-    ['url' => 'chat.php', 'icon' => 'fas fa-comments', 'text' => 'Live Chat'],
+    ['url' => 'chat.php', 'icon' => 'fas fa-comments', 'text' => 'Live Chat', 'badge' => $unreadMessagesCount],
 ];
 
 // Define admin-specific menu items
 $adminMenuItems = [
     ['url' => 'document_management.php', 'icon' => 'fas fa-folder-open', 'text' => 'Document Management'],
-    ['url' => 'user_management.php', 'icon' => 'fas fa-users-cog', 'text' => 'User Management'],
+    ['url' => 'user_management.php', 'icon' => 'fas fa-users-cog', 'text' => 'User Management', 'badge' => $pendingUsersCount],
     ['url' => 'reports.php', 'icon' => 'fas fa-chart-bar', 'text' => 'Reports'],
 ];
 
@@ -46,7 +83,8 @@ function renderMenuItem($item, $isAdmin) {
         foreach ($item['submenu'] as $subitem) {
             $isSubActive = basename($subitem['url']) === $currentPage;
             $activeSubClass = $isSubActive ? 'bg-primary/10 dark:bg-primary-dark/20' : '';
-            $submenuHtml .= '<li><a href="' . $subitem['url'] . '" class="flex items-center p-2 text-gray-600 rounded-lg dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 group ' . $activeSubClass . '">' . $subitem['text'] . '</a></li>';
+            $badgeHtml = isset($subitem['badge']) && $subitem['badge'] > 0 ? '<span class="inline-flex items-center justify-center w-5 h-5 ml-2 text-xs font-semibold text-white bg-red-500 rounded-full">' . $subitem['badge'] . '</span>' : '';
+            $submenuHtml .= '<li><a href="' . $subitem['url'] . '" class="flex items-center p-2 text-gray-600 rounded-lg dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 group ' . $activeSubClass . '">' . $subitem['text'] . $badgeHtml . '</a></li>';
         }
         $submenuHtml .= '</ul>';
     }
@@ -56,11 +94,14 @@ function renderMenuItem($item, $isAdmin) {
     $dropdownClass = isset($item['submenu']) ? 'dropdown-toggle' : '';
     $activeClass = $isActive ? 'bg-primary/10 dark:bg-primary-dark/20 text-primary dark:text-primary-dark' : '';
 
+    $badgeHtml = isset($item['badge']) && $item['badge'] > 0 ? '<span class="inline-flex items-center justify-center w-5 h-5 ml-2 text-xs font-semibold text-white bg-red-500 rounded-full">' . $item['badge'] . '</span>' : '';
+
     return '
     <li>
         <a href="' . $item['url'] . '" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group ' . $adminClass . ' ' . $dropdownClass . ' ' . $activeClass . '">
             <i class="' . $item['icon'] . ' w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-primary dark:group-hover:text-primary-dark transition duration-75 ' . ($isActive ? 'text-primary dark:text-primary-dark' : '') . '"></i>
             <span class="ml-3">' . $item['text'] . '</span>
+            ' . $badgeHtml . '
             ' . (isset($item['submenu']) ? '<i class="fas fa-chevron-down ml-auto text-gray-500 dark:text-gray-400 group-hover:text-primary dark:group-hover:text-primary-dark transition-transform duration-200"></i>' : '') . '
         </a>
         ' . $submenuHtml . '

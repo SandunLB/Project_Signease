@@ -24,7 +24,7 @@ $result = $stmt->get_result();
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -36,7 +36,8 @@ $result = $stmt->get_result();
             theme: {
                 extend: {
                     colors: {
-                        // Add any custom colors here
+                        primary: '#8B0000',
+                        secondary: '#FFA500',
                     }
                 }
             }
@@ -44,7 +45,7 @@ $result = $stmt->get_result();
     </script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 dark:bg-gray-900">
+<body class="bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
     <div class="p-4 sm:ml-64">
         <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
             <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Documents to Sign</h1>
@@ -104,7 +105,7 @@ $result = $stmt->get_result();
                                     <td class="py-4 px-6">
                                         <?php if ($row['status'] !== 'signed'): ?>
                                             <a href="#" 
-                                            onclick="handleSignClick('<?php echo htmlspecialchars($row['file_path']); ?>')" 
+                                            onclick="handleSignClick(<?php echo $row['id']; ?>, '<?php echo htmlspecialchars($row['file_path']); ?>')" 
                                             class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
                                                 Sign
                                             </a>
@@ -123,25 +124,41 @@ $result = $stmt->get_result();
         </div>
     </div>
     <script>
-        function handleSignClick(documentPath) {
-            try {
-                // Create URL to the document editor page, considering the signeasex root folder
-                const signerUrl = new URL(window.location.pathname, window.location.origin);
-                // Replace the current PHP file with the path to doc_editor/index.html
-                const editorPath = signerUrl.pathname.replace('documents_to_sign.php', 'doc_editor/index.html');
-                const finalUrl = new URL(editorPath, window.location.origin);
-                
-                // Store the document path in sessionStorage
-                sessionStorage.setItem('documentToSign', documentPath);
-                
-                // Navigate to the signer page
-                window.location.href = finalUrl.toString();
-            } catch (error) {
-                console.error('Error handling sign click:', error);
-                alert('Error opening document signer. Please try again.');
+        function handleSignClick(documentId, documentPath) {
+            if (confirm("Are you sure you want to sign this document?")) {
+                // Send a POST request to update the document status
+                fetch('update_document_status.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'document_id=' + documentId
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // If status update is successful, proceed to the PDF editor
+                        sessionStorage.setItem('documentToSign', documentPath);
+                        
+                        // Create URL to the document editor page
+                        const signerUrl = new URL(window.location.pathname, window.location.origin);
+                        const editorPath = signerUrl.pathname.replace('documents_to_sign.php', 'doc_editor/index.html');
+                        const finalUrl = new URL(editorPath, window.location.origin);
+                        
+                        // Navigate to the signer page
+                        window.location.href = finalUrl.toString();
+                    } else {
+                        alert('Failed to update document status');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while updating the document status');
+                });
             }
         }
     </script>
     <script src="theme.js"></script>
 </body>
 </html>
+
