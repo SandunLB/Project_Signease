@@ -16,13 +16,13 @@ if (isset($_GET['download_document'])) {
     $document_id = $_GET['download_document'];
     
     // Update document status to 'completed'
-    $update_sql = "UPDATE documents SET status = 'completed' WHERE id = ?";
+    $update_sql = "UPDATE documents SET status = 'completed' WHERE id = ? AND status = 'signed'";
     $update_stmt = $conn->prepare($update_sql);
     $update_stmt->bind_param("i", $document_id);
     $update_stmt->execute();
     
     // Fetch the file path
-    $file_sql = "SELECT file_path FROM documents WHERE id = ?";
+    $file_sql = "SELECT signed_file_path FROM documents WHERE id = ?";
     $file_stmt = $conn->prepare($file_sql);
     $file_stmt->bind_param("i", $document_id);
     $file_stmt->execute();
@@ -30,7 +30,7 @@ if (isset($_GET['download_document'])) {
     $file_row = $file_result->fetch_assoc();
     
     if ($file_row) {
-        $file_path = $file_row['file_path'];
+        $file_path = $file_row['signed_file_path'];
         if (file_exists($file_path)) {
             // Clear any output that might have been sent
             ob_clean();
@@ -49,9 +49,8 @@ if (isset($_GET['download_document'])) {
     }
 }
 
-
 // Fetch sent documents
-$sent_sql = "SELECT d.id, d.file_path, d.drive_link, d.requirements, d.description, d.status, d.upload_date,
+$sent_sql = "SELECT d.id, d.file_path, d.signed_file_path, d.drive_link, d.requirements, d.description, d.status, d.upload_date,
                     u.name AS recipient_name, u.email AS recipient_email
              FROM documents d
              JOIN users u ON d.recipient_id = u.id
@@ -77,7 +76,6 @@ function getStatusClass($status) {
             return 'bg-gray-300 text-gray-700';
     }
 }
-
 
 ?>
 
@@ -140,7 +138,10 @@ function getStatusClass($status) {
                                 </td>
                                 <td class="py-4 px-6">
                                     <?php
-                                    if (!empty($row['drive_link'])) {
+                                    if ($row['status'] === 'signed' || $row['status'] === 'completed') {
+                                        $doc_link = $row['signed_file_path'];
+                                        $doc_name = "View Signed Document";
+                                    } elseif (!empty($row['drive_link'])) {
                                         $doc_link = $row['drive_link'];
                                         $doc_name = "View on Google Drive";
                                     } else {
@@ -160,7 +161,7 @@ function getStatusClass($status) {
                                     <?php if ($row['status'] === 'signed' || $row['status'] === 'completed'): ?>
                                         <form method="get" action="">
                                             <input type="hidden" name="download_document" value="<?php echo $row['id']; ?>">
-                                            <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded" onclick="event.stopPropagation(); setTimeout(function(){ location.reload(); }, 1000);">
+                                            <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded" onclick="event.stopPropagation();">
                                                 <?php echo $row['status'] === 'completed' ? 'Download Again' : 'Download'; ?>
                                             </button>
                                         </form>
@@ -264,4 +265,3 @@ function getStatusClass($status) {
 </body>
 </html>
 <?php ob_end_flush(); ?>
-

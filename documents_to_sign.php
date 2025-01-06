@@ -71,7 +71,7 @@ $result = $stmt->get_result();
                                         <span class="text-xs text-gray-500 dark:text-gray-400"><?php echo htmlspecialchars($row['sender_email']); ?></span>
                                     </td>
                                     <td class="py-4 px-6">
-                                        <?php if ($row['status'] === 'signed' && !empty($row['signed_file_path'])): ?>
+                                    <?php if ($row['status'] === 'signed' || $row['status'] === 'completed' && !empty($row['signed_file_path'])): ?>
                                             <a href="<?php echo htmlspecialchars($row['signed_file_path']); ?>" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">View Signed Document</a>
                                         <?php elseif (!empty($row['drive_link'])): ?>
                                             <a href="<?php echo htmlspecialchars($row['drive_link']); ?>" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">View on Google Drive</a>
@@ -84,26 +84,29 @@ $result = $stmt->get_result();
                                     <td class="py-4 px-6"><?php echo htmlspecialchars($row['description']); ?></td>
                                     <td class="py-4 px-6">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                            <?php
+                                        <?php
                                             switch ($row['status']) {
                                                 case 'sent':
-                                                    echo 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100';
-                                                    break;
-                                                case 'signed':
-                                                    echo 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100';
+                                                    echo 'bg-blue-500 text-white';
                                                     break;
                                                 case 'pending':
-                                                    echo 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100';
+                                                    echo 'bg-yellow-500 text-white';
+                                                    break;
+                                                case 'signed':
+                                                    echo 'bg-green-500 text-white';
+                                                    break;
+                                                case 'completed':
+                                                    echo 'bg-purple-500 text-white';
                                                     break;
                                                 default:
-                                                    echo 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+                                                    echo 'bg-gray-300 text-gray-700';
                                             }
                                             ?>">
                                             <?php echo ucfirst(htmlspecialchars($row['status'])); ?>
                                         </span>
                                     </td>
                                     <td class="py-4 px-6">
-                                        <?php if ($row['status'] !== 'signed'): ?>
+                                    <?php if ($row['status'] !== 'signed' && $row['status'] !== 'completed'): ?>
                                             <a href="#" 
                                             onclick="handleSignClick(<?php echo $row['id']; ?>, '<?php echo htmlspecialchars($row['file_path']); ?>')" 
                                             class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
