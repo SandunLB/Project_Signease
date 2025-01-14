@@ -11,6 +11,7 @@ if (!isset($_SESSION['user_id'])) {
 // Fetch documents for the current user
 $user_id = $_SESSION['user_id'];
 $sql = "SELECT d.id, d.file_path, d.signed_file_path, d.drive_link, d.requirements, d.description, d.status, 
+               d.upload_date, d.due_date,
                u.id AS sender_id, u.name AS sender_name, u.email AS sender_email
         FROM documents d
         JOIN users u ON d.sender_id = u.id
@@ -57,6 +58,8 @@ $result = $stmt->get_result();
                             <tr>
                                 <th scope="col" class="py-3 px-6">Sender</th>
                                 <th scope="col" class="py-3 px-6">Document</th>
+                                <th scope="col" class="py-3 px-6">Upload Date</th>
+                                <th scope="col" class="py-3 px-6">Due Date</th>
                                 <th scope="col" class="py-3 px-6">Requirements</th>
                                 <th scope="col" class="py-3 px-6">Description</th>
                                 <th scope="col" class="py-3 px-6">Status</th>
@@ -80,6 +83,8 @@ $result = $stmt->get_result();
                                             <a href="<?php echo htmlspecialchars($row['file_path']); ?>" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline"><?php echo htmlspecialchars($file_name); ?></a>
                                         <?php endif; ?>
                                     </td>
+                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['upload_date']); ?></td>
+                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['due_date'] ?? 'N/A'); ?></td>
                                     <td class="py-4 px-6"><?php echo htmlspecialchars($row['requirements']); ?></td>
                                     <td class="py-4 px-6"><?php echo htmlspecialchars($row['description']); ?></td>
                                     <td class="py-4 px-6">

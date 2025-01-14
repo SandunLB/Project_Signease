@@ -50,7 +50,7 @@ if (isset($_GET['download_document'])) {
 }
 
 // Fetch sent documents
-$sent_sql = "SELECT d.id, d.file_path, d.signed_file_path, d.drive_link, d.requirements, d.description, d.status, d.upload_date,
+$sent_sql = "SELECT d.id, d.file_path, d.signed_file_path, d.drive_link, d.requirements, d.description, d.status, d.upload_date, d.due_date,
                     u.name AS recipient_name, u.email AS recipient_email
              FROM documents d
              JOIN users u ON d.recipient_id = u.id
@@ -115,62 +115,66 @@ function getStatusClass($status) {
             <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Activity Log</h1>
             
             <div class="overflow-x-auto relative shadow-md sm:rounded-lg">
-                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                        <tr>
-                            <th scope="col" class="py-3 px-6">Recipient</th>
-                            <th scope="col" class="py-3 px-6">Document</th>
-                            <th scope="col" class="py-3 px-6">Status</th>
-                            <th scope="col" class="py-3 px-6">Date</th>
-                            <th scope="col" class="py-3 px-6">Action</th>
+            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th scope="col" class="py-3 px-6">Recipient</th>
+                        <th scope="col" class="py-3 px-6">Document</th>
+                        <th scope="col" class="py-3 px-6">Upload Date</th>
+                        <th scope="col" class="py-3 px-6">Due Date</th>
+                        <th scope="col" class="py-3 px-6">Status</th>
+                        <th scope="col" class="py-3 px-6">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php while ($row = $sent_result->fetch_assoc()): ?>
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer open-modal" 
+                            data-id="<?php echo $row['id']; ?>"
+                            data-requirements="<?php echo htmlspecialchars($row['requirements']); ?>"
+                            data-description="<?php echo htmlspecialchars($row['description']); ?>"
+                            data-status="<?php echo htmlspecialchars($row['status']); ?>"
+                            data-upload-date="<?php echo htmlspecialchars($row['upload_date']); ?>"
+                            data-due-date="<?php echo htmlspecialchars($row['due_date']); ?>">
+                            <td class="py-4 px-6">
+                                <?php echo htmlspecialchars($row['recipient_name']); ?><br>
+                                <span class="text-xs text-gray-500 dark:text-gray-400"><?php echo htmlspecialchars($row['recipient_email']); ?></span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <?php
+                                if ($row['status'] === 'signed' || $row['status'] === 'completed') {
+                                    $doc_link = $row['signed_file_path'];
+                                    $doc_name = "View Signed Document";
+                                } elseif (!empty($row['drive_link'])) {
+                                    $doc_link = $row['drive_link'];
+                                    $doc_name = "View on Google Drive";
+                                } else {
+                                    $doc_link = $row['file_path'];
+                                    $doc_name = basename($row['file_path']);
+                                }
+                                ?>
+                                <a href="<?php echo htmlspecialchars($doc_link); ?>" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline" onclick="event.stopPropagation();"><?php echo htmlspecialchars($doc_name); ?></a>
+                            </td>
+                            <td class="py-4 px-6"><?php echo htmlspecialchars($row['upload_date']); ?></td>
+                            <td class="py-4 px-6"><?php echo htmlspecialchars($row['due_date'] ?? 'N/A'); ?></td>
+                            <td class="py-4 px-6">
+                                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo getStatusClass($row['status']); ?>">
+                                    <?php echo ucfirst(htmlspecialchars($row['status'])); ?>
+                                </span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <?php if ($row['status'] === 'signed' || $row['status'] === 'completed'): ?>
+                                    <form method="get" action="">
+                                        <input type="hidden" name="download_document" value="<?php echo $row['id']; ?>">
+                                        <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded" onclick="event.stopPropagation();">
+                                            <?php echo $row['status'] === 'completed' ? 'Download Again' : 'Download'; ?>
+                                        </button>
+                                    </form>
+                                <?php endif; ?>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <?php while ($row = $sent_result->fetch_assoc()): ?>
-                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer open-modal" 
-                                data-id="<?php echo $row['id']; ?>"
-                                data-requirements="<?php echo htmlspecialchars($row['requirements']); ?>"
-                                data-description="<?php echo htmlspecialchars($row['description']); ?>"
-                                data-status="<?php echo htmlspecialchars($row['status']); ?>">
-                                <td class="py-4 px-6">
-                                    <?php echo htmlspecialchars($row['recipient_name']); ?><br>
-                                    <span class="text-xs text-gray-500 dark:text-gray-400"><?php echo htmlspecialchars($row['recipient_email']); ?></span>
-                                </td>
-                                <td class="py-4 px-6">
-                                    <?php
-                                    if ($row['status'] === 'signed' || $row['status'] === 'completed') {
-                                        $doc_link = $row['signed_file_path'];
-                                        $doc_name = "View Signed Document";
-                                    } elseif (!empty($row['drive_link'])) {
-                                        $doc_link = $row['drive_link'];
-                                        $doc_name = "View on Google Drive";
-                                    } else {
-                                        $doc_link = $row['file_path'];
-                                        $doc_name = basename($row['file_path']);
-                                    }
-                                    ?>
-                                    <a href="<?php echo htmlspecialchars($doc_link); ?>" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline" onclick="event.stopPropagation();"><?php echo htmlspecialchars($doc_name); ?></a>
-                                </td>
-                                <td class="py-4 px-6">
-                                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo getStatusClass($row['status']); ?>">
-                                        <?php echo ucfirst(htmlspecialchars($row['status'])); ?>
-                                    </span>
-                                </td>
-                                <td class="py-4 px-6"><?php echo htmlspecialchars($row['upload_date']); ?></td>
-                                <td class="py-4 px-6">
-                                    <?php if ($row['status'] === 'signed' || $row['status'] === 'completed'): ?>
-                                        <form method="get" action="">
-                                            <input type="hidden" name="download_document" value="<?php echo $row['id']; ?>">
-                                            <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded" onclick="event.stopPropagation();">
-                                                <?php echo $row['status'] === 'completed' ? 'Download Again' : 'Download'; ?>
-                                            </button>
-                                        </form>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                        <?php endwhile; ?>
-                    </tbody>
-                </table>
+                    <?php endwhile; ?>
+                </tbody>
+            </table>
             </div>
         </div>
     </div>
@@ -229,11 +233,15 @@ function getStatusClass($status) {
                     const docDetails = {
                         requirements: this.getAttribute('data-requirements'),
                         description: this.getAttribute('data-description'),
-                        status: this.getAttribute('data-status')
+                        status: this.getAttribute('data-status'),
+                        uploadDate: this.getAttribute('data-upload-date'),
+                        dueDate: this.getAttribute('data-due-date')
                     };
                     modalContent.innerHTML = `
                         <p class="dark:text-gray-300"><strong>Requirements:</strong> ${docDetails.requirements}</p>
                         <p class="dark:text-gray-300"><strong>Description:</strong> ${docDetails.description}</p>
+                        <p class="dark:text-gray-300"><strong>Upload Date:</strong> ${docDetails.uploadDate}</p>
+                        <p class="dark:text-gray-300"><strong>Due Date:</strong> ${docDetails.dueDate || 'N/A'}</p>
                     `;
                     updateStatusFlow(docDetails.status);
                     modal.classList.remove('hidden');

@@ -45,13 +45,28 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_user'])) {
     $stmt->close();
 }
 
-// Fetch all users
-$sql = "SELECT id, name, email, nic, position, faculty, mobile, employee_number, role, status FROM users ORDER BY status DESC, name ASC";
-$result = $conn->query($sql);
+// Search functionality
+$search = isset($_GET['search']) ? $_GET['search'] : '';
+$currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'all-users';
 
-// Fetch pending users
-$sql_pending = "SELECT id, name, email, nic, position, faculty, mobile, employee_number, role FROM users WHERE status = 'pending' ORDER BY name ASC";
-$result_pending = $conn->query($sql_pending);
+// Fetch all users with search
+$sql = "SELECT id, name, email, nic, position, faculty, mobile, employee_number, role, status FROM users 
+        WHERE (name LIKE ? OR email LIKE ? OR nic LIKE ? OR position LIKE ? OR faculty LIKE ?)
+        ORDER BY status DESC, name ASC";
+$stmt = $conn->prepare($sql);
+$searchParam = "%$search%";
+$stmt->bind_param("sssss", $searchParam, $searchParam, $searchParam, $searchParam, $searchParam);
+$stmt->execute();
+$result = $stmt->get_result();
+
+// Fetch pending users with search
+$sql_pending = "SELECT id, name, email, nic, position, faculty, mobile, employee_number, role FROM users 
+                WHERE status = 'pending' AND (name LIKE ? OR email LIKE ? OR nic LIKE ? OR position LIKE ? OR faculty LIKE ?)
+                ORDER BY name ASC";
+$stmt_pending = $conn->prepare($sql_pending);
+$stmt_pending->bind_param("sssss", $searchParam, $searchParam, $searchParam, $searchParam, $searchParam);
+$stmt_pending->execute();
+$result_pending = $stmt_pending->get_result();
 ?>
 
 <!DOCTYPE html>
@@ -121,20 +136,33 @@ $result_pending = $conn->query($sql_pending);
         <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 mt-14">
             <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">User Management</h1>
             
-            <!-- Tabs -->
-            <div class="mb-4">
-                <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">
+            <!-- Tabs and Search Bar -->
+            <div class="flex items-center justify-between mb-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+                <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 dark:text-gray-400">
                     <li class="mr-2">
-                        <a href="#" class="inline-block p-4 text-blue-600 bg-gray-100 rounded-t-lg active dark:bg-gray-800 dark:text-blue-500" onclick="showTab('all-users')">All Users</a>
+                        <a href="?tab=all-users<?php echo $search ? '&search=' . urlencode($search) : ''; ?>" class="inline-block p-4 <?php echo $currentTab === 'all-users' ? 'text-blue-600 bg-gray-100 rounded-tl-lg active dark:bg-gray-800 dark:text-blue-500' : 'hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'; ?>">All Users</a>
                     </li>
                     <li class="mr-2">
-                        <a href="#" class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300" onclick="showTab('pending-approvals')">Pending Approvals</a>
+                        <a href="?tab=pending-approvals<?php echo $search ? '&search=' . urlencode($search) : ''; ?>" class="inline-block p-4 <?php echo $currentTab === 'pending-approvals' ? 'text-blue-600 bg-gray-100 active dark:bg-gray-800 dark:text-blue-500' : 'hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'; ?>">Pending Approvals</a>
                     </li>
                 </ul>
+                <form action="" method="GET" class="flex items-center p-2 relative group">
+                    <input type="hidden" name="tab" value="<?php echo $currentTab; ?>">
+                    <input 
+                        type="text" 
+                        name="search" 
+                        placeholder="Search documents..." 
+                        value="<?php echo htmlspecialchars($search); ?>" 
+                        class="w-10 p-2 border rounded-full transition-all duration-300 focus:w-64 group-hover:w-64 dark:bg-gray-700 dark:text-white opacity-0 focus:opacity-100 group-hover:opacity-100 outline-none border-blue-500"
+                    >
+                    <button type="submit" class="absolute right-2 bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 h-10 w-10 flex items-center justify-center">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
             </div>
 
             <!-- All Users Tab -->
-            <div id="all-users" class="tab-content">
+            <div id="all-users" class="tab-content <?php echo $currentTab === 'all-users' ? '' : 'hidden'; ?>">
                 <div class="overflow-x-auto relative shadow-md sm:rounded-lg">
                     <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
@@ -152,36 +180,42 @@ $result_pending = $conn->query($sql_pending);
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while ($row = $result->fetch_assoc()): ?>
-                                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['name']); ?></td>
-                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['email']); ?></td>
-                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['nic']); ?></td>
-                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['position']); ?></td>
-                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['faculty']); ?></td>
-                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['mobile']); ?></td>
-                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['employee_number']); ?></td>
-                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['role']); ?></td>
-                                    <td class="py-4 px-6">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                            <?php echo $row['status'] === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-200 dark:text-green-900' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-200 dark:text-yellow-900'; ?>">
-                                            <?php echo ucfirst(htmlspecialchars($row['status'])); ?>
-                                        </span>
-                                    </td>
-                                    <td class="py-4 px-6">
-                                        <button onclick="openUpdateModal(<?php echo htmlspecialchars(json_encode($row)); ?>)" class="text-blue-600 dark:text-blue-500 hover:underline">
-                                            Edit
-                                        </button>
-                                    </td>
+                            <?php if ($result->num_rows > 0): ?>
+                                <?php while ($row = $result->fetch_assoc()): ?>
+                                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                        <td class="py-4 px-6"><?php echo htmlspecialchars($row['name']); ?></td>
+                                        <td class="py-4 px-6"><?php echo htmlspecialchars($row['email']); ?></td>
+                                        <td class="py-4 px-6"><?php echo htmlspecialchars($row['nic']); ?></td>
+                                        <td class="py-4 px-6"><?php echo htmlspecialchars($row['position']); ?></td>
+                                        <td class="py-4 px-6"><?php echo htmlspecialchars($row['faculty']); ?></td>
+                                        <td class="py-4 px-6"><?php echo htmlspecialchars($row['mobile']); ?></td>
+                                        <td class="py-4 px-6"><?php echo htmlspecialchars($row['employee_number']); ?></td>
+                                        <td class="py-4 px-6"><?php echo htmlspecialchars($row['role']); ?></td>
+                                        <td class="py-4 px-6">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                                <?php echo $row['status'] === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-200 dark:text-green-900' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-200 dark:text-yellow-900'; ?>">
+                                                <?php echo ucfirst(htmlspecialchars($row['status'])); ?>
+                                            </span>
+                                        </td>
+                                        <td class="py-4 px-6">
+                                            <button onclick="openUpdateModal(<?php echo htmlspecialchars(json_encode($row)); ?>)" class="text-blue-600 dark:text-blue-500 hover:underline">
+                                                Edit
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <?php endwhile; ?>
+                            <?php else: ?>
+                                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                    <td colspan="10" class="py-4 px-6 text-center">No users found</td>
                                 </tr>
-                            <?php endwhile; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
             </div>
 
             <!-- Pending Approvals Tab -->
-            <div id="pending-approvals" class="tab-content hidden">
+            <div id="pending-approvals" class="tab-content <?php echo $currentTab === 'pending-approvals' ? '' : 'hidden'; ?>">
                 <div class="overflow-x-auto relative shadow-md sm:rounded-lg">
                     <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
@@ -195,31 +229,37 @@ $result_pending = $conn->query($sql_pending);
                             </tr>
                         </thead>
                         <tbody>
-                            <?php while ($row = $result_pending->fetch_assoc()): ?>
-                                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['name']); ?></td>
-                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['email']); ?></td>
-                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['nic']); ?></td>
-                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['position']); ?></td>
-                                    <td class="py-4 px-6"><?php echo htmlspecialchars($row['faculty']); ?></td>
-                                    <td class="py-4 px-6">
-                                        <form method="POST" class="inline-block mr-2">
-                                            <input type="hidden" name="user_id" value="<?php echo $row['id']; ?>">
-                                            <input type="hidden" name="action" value="approve">
-                                            <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
-                                                Approve
-                                            </button>
-                                        </form>
-                                        <form method="POST" class="inline-block">
-                                            <input type="hidden" name="user_id" value="<?php echo $row['id']; ?>">
-                                            <input type="hidden" name="action" value="reject">
-                                            <button type="submit" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800">
-                                                Reject
-                                            </button>
-                                        </form>
-                                    </td>
+                            <?php if ($result_pending->num_rows > 0): ?>
+                                <?php while ($row = $result_pending->fetch_assoc()): ?>
+                                    <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                        <td class="py-4 px-6"><?php echo htmlspecialchars($row['name']); ?></td>
+                                        <td class="py-4 px-6"><?php echo htmlspecialchars($row['email']); ?></td>
+                                        <td class="py-4 px-6"><?php echo htmlspecialchars($row['nic']); ?></td>
+                                        <td class="py-4 px-6"><?php echo htmlspecialchars($row['position']); ?></td>
+                                        <td class="py-4 px-6"><?php echo htmlspecialchars($row['faculty']); ?></td>
+                                        <td class="py-4 px-6">
+                                            <form method="POST" class="inline-block mr-2">
+                                                <input type="hidden" name="user_id" value="<?php echo $row['id']; ?>">
+                                                <input type="hidden" name="action" value="approve">
+                                                <button type="submit" class="text-white bg-green-700 hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800">
+                                                    Approve
+                                                </button>
+                                            </form>
+                                            <form method="POST" class="inline-block">
+                                                <input type="hidden" name="user_id" value="<?php echo $row['id']; ?>">
+                                                <input type="hidden" name="action" value="reject">
+                                                <button type="submit" class="text-white bg-red-700 hover:bg-red-800 focus:ring-4 focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-800">
+                                                    Reject
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <?php endwhile; ?>
+                            <?php else: ?>
+                                <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                    <td colspan="6" class="py-4 px-6 text-center">No pending approvals found</td>
                                 </tr>
-                            <?php endwhile; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -234,7 +274,7 @@ $result_pending = $conn->query($sql_pending);
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full dark:bg-gray-800">
                 <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                    <h3 class="text-lg leading-6 font-mediumtext-gray-900 dark:text-white" id="modal-title">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
                         Update User
                     </h3>
                     <div class="mt-2">
@@ -303,17 +343,7 @@ $result_pending = $conn->query($sql_pending);
 
     <script>
         function showTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.add('hidden');
-            });
-            document.getElementById(tabId).classList.remove('hidden');
-
-            document.querySelectorAll('.flex.flex-wrap a').forEach(link => {
-                link.classList.remove('text-blue-600', 'bg-gray-100', 'dark:bg-gray-800', 'dark:text-blue-500');
-                link.classList.add('hover:text-gray-600', 'hover:bg-gray-50', 'dark:hover:bg-gray-800', 'dark:hover:text-gray-300');
-            });
-            document.querySelector(`a[onclick="showTab('${tabId}')"]`).classList.add('text-blue-600', 'bg-gray-100', 'dark:bg-gray-800', 'dark:text-blue-500');
-            document.querySelector(`a[onclick="showTab('${tabId}')"]`).classList.remove('hover:text-gray-600', 'hover:bg-gray-50', 'dark:hover:bg-gray-800', 'dark:hover:text-gray-300');
+            // This function is no longer needed as we're using server-side tab switching
         }
 
         function openUpdateModal(user) {
