@@ -166,43 +166,43 @@ $conn->close();
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
     <div class="p-4 sm:ml-64">
         <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
-            <h1 class="text-3xl font-semibold mb-6 animate__animated animate__fadeIn">Welcome, <?php echo htmlspecialchars($user['name']); ?>!</h1>
+        <h1 class="text-3xl font-semibold mb-6 animate__animated animate__fadeIn text-gray-800 dark:text-white">Welcome, <?php if ($user['role'] === 'admin') echo 'Administrator'; else echo htmlspecialchars($user['name']); ?>!</h1>
 
             <!-- Summary Cards -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <?php if ($user['role'] === 'admin'): ?>
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeInUp">
-                    <h3 class="text-xl font-semibold mb-2">Total Users</h3>
-                    <p class="text-3xl font-bold"><?php echo $totalUsers; ?></p>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-800 dark:text-white">Total Users</h3>
+                    <p class="text-3xl font-bold text-gray-800 dark:text-white"><?php echo $totalUsers; ?></p>
                 </div>
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeInUp" style="animation-delay: 0.1s;">
-                    <h3 class="text-xl font-semibold mb-2">Total Documents</h3>
-                    <p class="text-3xl font-bold"><?php echo $totalDocuments; ?></p>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-800 dark:text-white">Total Documents</h3>
+                    <p class="text-3xl font-bold text-gray-800 dark:text-white"><?php echo $totalDocuments; ?></p>
                 </div>
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeInUp" style="animation-delay: 0.2s;">
-                    <h3 class="text-xl font-semibold mb-2">Signed Documents</h3>
-                    <p class="text-3xl font-bold"><?php echo $totalSignedDocuments; ?></p>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-800 dark:text-white">Signed Documents</h3>
+                    <p class="text-3xl font-bold text-gray-800 dark:text-white"><?php echo $totalSignedDocuments; ?></p>
                 </div>
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeInUp" style="animation-delay: 0.3s;">
-                    <h3 class="text-xl font-semibold mb-2">Total Messages</h3>
-                    <p class="text-3xl font-bold"><?php echo $totalMessages; ?></p>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-800 dark:text-white">Total Messages</h3>
+                    <p class="text-3xl font-bold text-gray-800 dark:text-white"><?php echo $totalMessages; ?></p>
                 </div>
                 <?php else: ?>
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeInUp">
-                    <h3 class="text-xl font-semibold mb-2">Your Documents</h3>
-                    <p class="text-3xl font-bold"><?php echo $userDocuments; ?></p>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-800 dark:text-white">Your Documents</h3>
+                    <p class="text-3xl font-bold text-gray-800 dark:text-white"><?php echo $userDocuments; ?></p>
                 </div>
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeInUp" style="animation-delay: 0.1s;">
-                    <h3 class="text-xl font-semibold mb-2">Your Signed Documents</h3>
-                    <p class="text-3xl font-bold"><?php echo $userSignedDocuments; ?></p>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-800 dark:text-white">Your Signed Documents</h3>
+                    <p class="text-3xl font-bold text-gray-800 dark:text-white"><?php echo $userSignedDocuments; ?></p>
                 </div>
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeInUp" style="animation-delay: 0.2s;">
-                    <h3 class="text-xl font-semibold mb-2">Your Pending Documents</h3>
-                    <p class="text-3xl font-bold"><?php echo $userPendingDocuments; ?></p>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-800 dark:text-white">Your Pending Documents</h3>
+                    <p class="text-3xl font-bold text-gray-800 dark:text-white"><?php echo $userPendingDocuments; ?></p>
                 </div>
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeInUp" style="animation-delay: 0.3s;">
-                    <h3 class="text-xl font-semibold mb-2">Your Messages</h3>
-                    <p class="text-3xl font-bold"><?php echo $userMessages; ?></p>
+                    <h3 class="text-xl font-semibold mb-2 text-gray-800 dark:text-white">Your Messages</h3>
+                    <p class="text-3xl font-bold text-gray-800 dark:text-white"><?php echo $userMessages; ?></p>
                 </div>
                 <?php endif; ?>
             </div>
@@ -211,32 +211,32 @@ $conn->close();
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 <?php if ($user['role'] === 'admin'): ?>
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn">
-                    <h3 class="text-xl font-semibold mb-4">Monthly User Registrations</h3>
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Monthly User Registrations</h3>
                     <canvas id="userChart"></canvas>
                 </div>
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.1s;">
-                    <h3 class="text-xl font-semibold mb-4">Monthly Document Activity</h3>
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Monthly Document Activity</h3>
                     <canvas id="documentChart"></canvas>
                 </div>
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.2s;">
-                    <h3 class="text-xl font-semibold mb-4">Document Status Distribution</h3>
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Document Status Distribution</h3>
                     <canvas id="documentTypesChart"></canvas>
                 </div>
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.3s;">
-                    <h3 class="text-xl font-semibold mb-4">Monthly Message Activity</h3>
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Monthly Message Activity</h3>
                     <canvas id="messageChart"></canvas>
                 </div>
                 <?php else: ?>
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn">
-                    <h3 class="text-xl font-semibold mb-4">Your Monthly Document Activity</h3>
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Your Monthly Document Activity</h3>
                     <canvas id="userDocumentChart"></canvas>
                 </div>
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.1s;">
-                    <h3 class="text-xl font-semibold mb-4">Your Document Status Distribution</h3>
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Your Document Status Distribution</h3>
                     <canvas id="userDocumentStatusChart"></canvas>
                 </div>
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.2s;">
-                    <h3 class="text-xl font-semibold mb-4">Your Monthly Message Activity</h3>
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Your Monthly Message Activity</h3>
                     <canvas id="userMessageChart"></canvas>
                 </div>
                 <?php endif; ?>
@@ -246,20 +246,20 @@ $conn->close();
             <!-- Admin-only sections -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn">
-                    <h3 class="text-xl font-semibold mb-4">Top Users by Document Count</h3>
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Top Users by Document Count</h3>
                     <div class="overflow-x-auto">
                         <table class="min-w-full bg-white dark:bg-gray-800">
                             <thead class="bg-gray-100 dark:bg-gray-700">
                                 <tr>
-                                    <th class="py-2 px-4 text-left">User</th>
-                                    <th class="py-2 px-4 text-left">Document Count</th>
+                                    <th class="py-2 px-4 text-left text-gray-800 dark:text-white">User</th>
+                                    <th class="py-2 px-4 text-left text-gray-800 dark:text-white">Document Count</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($topUsers as $topUser): ?>
                                 <tr class="border-b dark:border-gray-700">
-                                    <td class="py-2 px-4"><?php echo htmlspecialchars($topUser['name']); ?></td>
-                                    <td class="py-2 px-4"><?php echo $topUser['document_count']; ?></td>
+                                    <td class="py-2 px-4 text-gray-800 dark:text-white"><?php echo htmlspecialchars($topUser['name']); ?></td>
+                                    <td class="py-2 px-4 text-gray-800 dark:text-white"><?php echo $topUser['document_count']; ?></td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -267,24 +267,24 @@ $conn->close();
                     </div>
                 </div>
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.1s;">
-                    <h3 class="text-xl font-semibold mb-4">User Activity Trends</h3>
+                    <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">User Activity Trends</h3>
                     <div class="overflow-x-auto">
                         <table class="min-w-full bg-white dark:bg-gray-800">
                             <thead class="bg-gray-100 dark:bg-gray-700">
                                 <tr>
-                                    <th class="py-2 px-4 text-left">User</th>
-                                    <th class="py-2 px-4 text-left">Documents</th>
-                                    <th class="py-2 px-4 text-left">Messages</th>
-                                    <th class="py-2 px-4 text-left">Last Activity</th>
+                                    <th class="py-2 px-4 text-left text-gray-800 dark:text-white">User</th>
+                                    <th class="py-2 px-4 text-left text-gray-800 dark:text-white">Documents</th>
+                                    <th class="py-2 px-4 text-left text-gray-800 dark:text-white">Messages</th>
+                                    <th class="py-2 px-4 text-left text-gray-800 dark:text-white">Last Activity</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php foreach ($userActivityTrends as $activity): ?>
                                 <tr class="border-b dark:border-gray-700">
-                                    <td class="py-2 px-4"><?php echo htmlspecialchars($activity['name']); ?></td>
-                                    <td class="py-2 px-4"><?php echo $activity['document_count']; ?></td>
-                                    <td class="py-2 px-4"><?php echo $activity['message_count']; ?></td>
-                                    <td class="py-2 px-4"><?php echo date('Y-m-d H:i', strtotime($activity['last_activity'])); ?></td>
+                                    <td class="py-2 px-4 text-gray-800 dark:text-white"><?php echo htmlspecialchars($activity['name']); ?></td>
+                                    <td class="py-2 px-4 text-gray-800 dark:text-white"><?php echo $activity['document_count']; ?></td>
+                                    <td class="py-2 px-4 text-gray-800 dark:text-white"><?php echo $activity['message_count']; ?></td>
+                                    <td class="py-2 px-4 text-gray-800 dark:text-white"><?php echo date('Y-m-d H:i', strtotime($activity['last_activity'])); ?></td>
                                 </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -296,24 +296,24 @@ $conn->close();
 
             <!-- Recent Activities -->
             <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-8 animate__animated animate__fadeIn">
-                <h3 class="text-xl font-semibold mb-4">Recent Activities</h3>
+                <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Recent Activities</h3>
                 <div class="overflow-x-auto">
                     <table class="min-w-full bg-white dark:bg-gray-800">
                         <thead class="bg-gray-100 dark:bg-gray-700">
                             <tr>
-                                <th class="py-2 px-4 text-left">User</th>
-                                <th class="py-2 px-4 text-left">Document</th>
-                                <th class="py-2 px-4 text-left">Status</th>
-                                <th class="py-2 px-4 text-left">Date</th>
+                                <th class="py-2 px-4 text-left text-gray-800 dark:text-white">User</th>
+                                <th class="py-2 px-4 text-left text-gray-800 dark:text-white">Document</th>
+                                <th class="py-2 px-4 text-left text-gray-800 dark:text-white">Status</th>
+                                <th class="py-2 px-4 text-left text-gray-800 dark:text-white">Date</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($recentActivities as $activity): ?>
                             <tr class="border-b dark:border-gray-700">
-                                <td class="py-2 px-4"><?php echo htmlspecialchars($activity['name']); ?></td>
-                                <td class="py-2 px-4"><?php echo htmlspecialchars(basename($activity['file_path'])); ?></td>
-                                <td class="py-2 px-4"><?php echo ucfirst($activity['status']); ?></td>
-                                <td class="py-2 px-4"><?php echo date('Y-m-d H:i', strtotime($activity['upload_date'])); ?></td>
+                                <td class="py-2 px-4 text-gray-800 dark:text-white"><?php echo htmlspecialchars($activity['name']); ?></td>
+                                <td class="py-2 px-4 text-gray-800 dark:text-white"><?php echo htmlspecialchars(basename($activity['file_path'])); ?></td>
+                                <td class="py-2 px-4 text-gray-800 dark:text-white"><?php echo ucfirst($activity['status']); ?></td>
+                                <td class="py-2 px-4 text-gray-800 dark:text-white"><?php echo date('Y-m-d H:i', strtotime($activity['upload_date'])); ?></td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -323,24 +323,24 @@ $conn->close();
 
             <!-- Recent Messages -->
             <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md animate__animated animate__fadeIn" style="animation-delay: 0.1s;">
-                <h3 class="text-xl font-semibold mb-4">Recent Messages</h3>
+                <h3 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">Recent Messages</h3>
                 <div class="overflow-x-auto">
                     <table class="min-w-full bg-white dark:bg-gray-800">
                         <thead class="bg-gray-100 dark:bg-gray-700">
                             <tr>
-                                <th class="py-2 px-4 text-left">Sender</th>
-                                <th class="py-2 px-4 text-left">Receiver</th>
-                                <th class="py-2 px-4 text-left">Message</th>
-                                <th class="py-2 px-4 text-left">Date</th>
+                                <th class="py-2 px-4 text-left text-gray-800 dark:text-white">Sender</th>
+                                <th class="py-2 px-4 text-left text-gray-800 dark:text-white">Receiver</th>
+                                <th class="py-2 px-4 text-left text-gray-800 dark:text-white">Message</th>
+                                <th class="py-2 px-4 text-left text-gray-800 dark:text-white">Date</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php foreach ($recentMessages as $message): ?>
                             <tr class="border-b dark:border-gray-700">
-                                <td class="py-2 px-4"><?php echo htmlspecialchars($message['sender_name']); ?></td>
-                                <td class="py-2 px-4"><?php echo htmlspecialchars($message['receiver_name']); ?></td>
-                                <td class="py-2 px-4"><?php echo htmlspecialchars(substr($message['message'], 0, 50)) . (strlen($message['message']) > 50 ? '...' : ''); ?></td>
-                                <td class="py-2 px-4"><?php echo date('Y-m-d H:i', strtotime($message['created_at'])); ?></td>
+                                <td class="py-2 px-4 text-gray-800 dark:text-white"><?php echo htmlspecialchars($message['sender_name']); ?></td>
+                                <td class="py-2 px-4 text-gray-800 dark:text-white"><?php echo htmlspecialchars($message['receiver_name']); ?></td>
+                                <td class="py-2 px-4 text-gray-800 dark:text-white"><?php echo htmlspecialchars(substr($message['message'], 0, 50)) . (strlen($message['message']) > 50 ? '...' : ''); ?></td>
+                                <td class="py-2 px-4 text-gray-800 dark:text-white"><?php echo date('Y-m-d H:i', strtotime($message['created_at'])); ?></td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -680,9 +680,10 @@ $conn->close();
 
     // Listen for theme changes
     window.addEventListener('themeChanged', function(e) {
-        updateChartsTheme(e.detail.isDarkMode);
+        updateChartsTheme(e.detail === 'dark');
     });
     </script>
     <script src="theme.js"></script>
 </body>
 </html>
+

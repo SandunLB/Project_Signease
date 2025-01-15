@@ -1,4 +1,4 @@
-# PROJECT_SIGNEASE :)
+# PROJECT_SIGNEASE
 
 **PROJECT_SIGNEASE** is a web application designed to share and manage documents for digital signatures.
 

@@ -9,31 +9,51 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 }
 
 // Fetch documents
-function fetchDocuments($status = null) {
+function fetchDocuments($status = null, $search = '') {
     global $conn;
     $sql = "SELECT d.*, sender.name AS sender_name, recipient.name AS recipient_name 
             FROM documents d
             JOIN users sender ON d.sender_id = sender.id
-            JOIN users recipient ON d.recipient_id = recipient.id";
+            JOIN users recipient ON d.recipient_id = recipient.id
+            WHERE 1=1";
+    
+    $params = [];
+    $types = '';
+
     if ($status) {
-        $sql .= " WHERE d.status = ?";
+        $sql .= " AND d.status = ?";
+        $params[] = $status;
+        $types .= 's';
     }
+
+    if ($search) {
+        $sql .= " AND (sender.name LIKE ? OR recipient.name LIKE ? OR d.description LIKE ?)";
+        $searchParam = "%$search%";
+        $params[] = $searchParam;
+        $params[] = $searchParam;
+        $params[] = $searchParam;
+        $types .= 'sss';
+    }
+
     $sql .= " ORDER BY d.upload_date DESC";
     
     $stmt = $conn->prepare($sql);
-    if ($status) {
-        $stmt->bind_param("s", $status);
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
     }
     $stmt->execute();
     $result = $stmt->get_result();
     return $result->fetch_all(MYSQLI_ASSOC);
 }
 
-$allDocuments = fetchDocuments();
-$sentDocuments = fetchDocuments('sent');
-$pendingDocuments = fetchDocuments('pending');
-$signedDocuments = fetchDocuments('signed');
-$completedDocuments = fetchDocuments('completed');
+$search = isset($_GET['search']) ? $_GET['search'] : '';
+$currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'all';
+
+$allDocuments = fetchDocuments(null, $search);
+$sentDocuments = fetchDocuments('sent', $search);
+$pendingDocuments = fetchDocuments('pending', $search);
+$signedDocuments = fetchDocuments('signed', $search);
+$completedDocuments = fetchDocuments('completed', $search);
 ?>
 
 <!DOCTYPE html>
@@ -103,106 +123,135 @@ $completedDocuments = fetchDocuments('completed');
         <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 mt-14">
             <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Document Management</h1>
             
-            <!-- Tabs -->
-            <div class="mb-4">
-                <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 border-b border-gray-200 dark:border-gray-700 dark:text-gray-400">
+            <!-- Tabs and Search Bar -->
+            <div class="flex items-center justify-between mb-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+                <ul class="flex flex-wrap text-sm font-medium text-center text-gray-500 dark:text-gray-400">
                     <li class="mr-2">
-                        <a href="#" class="inline-block p-4 text-blue-600 bg-gray-100 rounded-t-lg active dark:bg-gray-800 dark:text-blue-500" onclick="showTab('all-documents')">All Documents</a>
+                        <a href="?tab=all<?php echo $search ? '&search=' . urlencode($search) : ''; ?>" class="inline-block p-4 <?php echo $currentTab === 'all' ? 'text-blue-600 bg-gray-100 rounded-tl-lg active dark:bg-gray-800 dark:text-blue-500' : 'hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'; ?>">All Documents</a>
                     </li>
                     <li class="mr-2">
-                        <a href="#" class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300" onclick="showTab('sent-documents')">Sent</a>
+                        <a href="?tab=sent<?php echo $search ? '&search=' . urlencode($search) : ''; ?>" class="inline-block p-4 <?php echo $currentTab === 'sent' ? 'text-blue-600 bg-gray-100 active dark:bg-gray-800 dark:text-blue-500' : 'hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'; ?>">Sent</a>
                     </li>
                     <li class="mr-2">
-                        <a href="#" class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300" onclick="showTab('pending-documents')">Pending</a>
+                        <a href="?tab=pending<?php echo $search ? '&search=' . urlencode($search) : ''; ?>" class="inline-block p-4 <?php echo $currentTab === 'pending' ? 'text-blue-600 bg-gray-100 active dark:bg-gray-800 dark:text-blue-500' : 'hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'; ?>">Pending</a>
                     </li>
                     <li class="mr-2">
-                        <a href="#" class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300" onclick="showTab('signed-documents')">Signed</a>
+                        <a href="?tab=signed<?php echo $search ? '&search=' . urlencode($search) : ''; ?>" class="inline-block p-4 <?php echo $currentTab === 'signed' ? 'text-blue-600 bg-gray-100 active dark:bg-gray-800 dark:text-blue-500' : 'hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'; ?>">Signed</a>
                     </li>
                     <li class="mr-2">
-                        <a href="#" class="inline-block p-4 rounded-t-lg hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300" onclick="showTab('completed-documents')">Completed</a>
+                        <a href="?tab=completed<?php echo $search ? '&search=' . urlencode($search) : ''; ?>" class="inline-block p-4 <?php echo $currentTab === 'completed' ? 'text-blue-600 bg-gray-100 active dark:bg-gray-800 dark:text-blue-500' : 'hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'; ?>">Completed</a>
                     </li>
                 </ul>
+                <form action="" method="GET" class="flex items-center p-2 relative group">
+                    <input type="hidden" name="tab" value="<?php echo $currentTab; ?>">
+                    <input 
+                        type="text" 
+                        name="search" 
+                        placeholder="Search documents..." 
+                        value="<?php echo htmlspecialchars($search); ?>" 
+                        class="w-10 p-2 border rounded-full transition-all duration-300 focus:w-64 group-hover:w-64 dark:bg-gray-700 dark:text-white opacity-0 focus:opacity-100 group-hover:opacity-100 outline-none border-blue-500"
+                    >
+                    <button type="submit" class="absolute right-2 bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 h-10 w-10 flex items-center justify-center">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
             </div>
 
-            <!-- Document Tables -->
-            <?php
-            $tabIds = ['all-documents', 'sent-documents', 'pending-documents', 'signed-documents', 'completed-documents'];
-            $documentSets = [$allDocuments, $sentDocuments, $pendingDocuments, $signedDocuments, $completedDocuments];
+            <!-- Document Table -->
+            <div class="overflow-x-auto relative shadow-md sm:rounded-lg">
+                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                        <tr>
+                            <th scope="col" class="py-3 px-6">ID</th>
+                            <th scope="col" class="py-3 px-6">Sender</th>
+                            <th scope="col" class="py-3 px-6">Recipient</th>
+                            <th scope="col" class="py-3 px-6">Upload Date</th>
+                            <th scope="col" class="py-3 px-6">Status</th>
+                            <th scope="col" class="py-3 px-6">Original Document</th>
+                            <th scope="col" class="py-3 px-6">Signed Document</th>
+                            <th scope="col" class="py-3 px-6">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $documents = [];
+                        switch ($currentTab) {
+                            case 'sent':
+                                $documents = $sentDocuments;
+                                break;
+                            case 'pending':
+                                $documents = $pendingDocuments;
+                                break;
+                            case 'signed':
+                                $documents = $signedDocuments;
+                                break;
+                            case 'completed':
+                                $documents = $completedDocuments;
+                                break;
+                            default:
+                                $documents = $allDocuments;
+                        }
 
-            foreach ($tabIds as $index => $tabId) {
-                $documents = $documentSets[$index];
-            ?>
-            <div id="<?php echo $tabId; ?>" class="tab-content <?php echo $index === 0 ? '' : 'hidden'; ?>">
-                <div class="overflow-x-auto relative shadow-md sm:rounded-lg">
-                    <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                            <tr>
-                                <th scope="col" class="py-3 px-6">ID</th>
-                                <th scope="col" class="py-3 px-6">Sender</th>
-                                <th scope="col" class="py-3 px-6">Recipient</th>
-                                <th scope="col" class="py-3 px-6">Upload Date</th>
-                                <th scope="col" class="py-3 px-6">Status</th>
-                                <th scope="col" class="py-3 px-6">Original Document</th>
-                                <th scope="col" class="py-3 px-6">Signed Document</th>
-                                <th scope="col" class="py-3 px-6">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($documents as $document): ?>
-                            <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
-                                <td class="py-4 px-6"><?php echo htmlspecialchars($document['id']); ?></td>
-                                <td class="py-4 px-6"><?php echo htmlspecialchars($document['sender_name']); ?></td>
-                                <td class="py-4 px-6"><?php echo htmlspecialchars($document['recipient_name']); ?></td>
-                                <td class="py-4 px-6"><?php echo htmlspecialchars($document['upload_date']); ?></td>
-                                <td class="py-4 px-6">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                        <?php
-                                        switch($document['status']) {
-                                            case 'sent':
-                                                echo 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-                                                break;
-                                            case 'pending':
-                                                echo 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-                                                break;
-                                            case 'signed':
-                                                echo 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-                                                break;
-                                            case 'completed':
-                                                echo 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
-                                                break;
-                                            default:
-                                                echo 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-                                        }
-                                        ?>">
-                                        <?php echo ucfirst(htmlspecialchars($document['status'])); ?>
-                                    </span>
-                                </td>
-                                <td class="py-4 px-6">
-                                    <?php if ($document['file_path']): ?>
-                                        <a href="<?php echo htmlspecialchars($document['file_path']); ?>" target="_blank" class="text-blue-600 dark:text-blue-500 hover:underline">View</a>
-                                    <?php else: ?>
-                                        N/A
-                                    <?php endif; ?>
-                                </td>
-                                <td class="py-4 px-6">
-                                    <?php if ($document['signed_file_path']): ?>
-                                        <a href="<?php echo htmlspecialchars($document['signed_file_path']); ?>" target="_blank" class="text-blue-600 dark:text-blue-500 hover:underline">View</a>
-                                    <?php else: ?>
-                                        N/A
-                                    <?php endif; ?>
-                                </td>
-                                <td class="py-4 px-6">
-                                    <button data-action="view-details" data-document='<?php echo htmlspecialchars(json_encode($document), ENT_QUOTES, 'UTF-8'); ?>' class="text-blue-600 dark:text-blue-500 hover:underline">
-                                        View Details
-                                    </button>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
+                        if (empty($documents)): 
+                        ?>
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                            <td colspan="8" class="py-4 px-6 text-center">No documents found</td>
+                        </tr>
+                        <?php else: ?>
+                        <?php foreach ($documents as $document): ?>
+                        <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <td class="py-4 px-6"><?php echo htmlspecialchars($document['id']); ?></td>
+                            <td class="py-4 px-6"><?php echo htmlspecialchars($document['sender_name']); ?></td>
+                            <td class="py-4 px-6"><?php echo htmlspecialchars($document['recipient_name']); ?></td>
+                            <td class="py-4 px-6"><?php echo htmlspecialchars($document['upload_date']); ?></td>
+                            <td class="py-4 px-6">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    <?php
+                                    switch($document['status']) {
+                                        case 'sent':
+                                            echo 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+                                            break;
+                                        case 'pending':
+                                            echo 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
+                                            break;
+                                        case 'signed':
+                                            echo 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+                                            break;
+                                        case 'completed':
+                                            echo 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
+                                            break;
+                                        default:
+                                            echo 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+                                    }
+                                    ?>">
+                                    <?php echo ucfirst(htmlspecialchars($document['status'])); ?>
+                                </span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <?php if ($document['file_path']): ?>
+                                    <a href="<?php echo htmlspecialchars($document['file_path']); ?>" target="_blank" class="text-blue-600 dark:text-blue-500 hover:underline">View</a>
+                                <?php else: ?>
+                                    N/A
+                                <?php endif; ?>
+                            </td>
+                            <td class="py-4 px-6">
+                                <?php if ($document['signed_file_path']): ?>
+                                    <a href="<?php echo htmlspecialchars($document['signed_file_path']); ?>" target="_blank" class="text-blue-600 dark:text-blue-500 hover:underline">View</a>
+                                <?php else: ?>
+                                    N/A
+                                <?php endif; ?>
+                            </td>
+                            <td class="py-4 px-6">
+                                <button data-action="view-details" data-document='<?php echo htmlspecialchars(json_encode($document), ENT_QUOTES, 'UTF-8'); ?>' class="text-blue-600 dark:text-blue-500 hover:underline">
+                                    View Details
+                                </button>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
             </div>
-            <?php } ?>
         </div>
     </div>
 
@@ -240,17 +289,7 @@ $completedDocuments = fetchDocuments('completed');
 
     <script>
         function showTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.add('hidden');
-            });
-            document.getElementById(tabId).classList.remove('hidden');
-
-            document.querySelectorAll('.flex.flex-wrap a').forEach(link => {
-                link.classList.remove('text-blue-600', 'bg-gray-100', 'dark:bg-gray-800', 'dark:text-blue-500');
-                link.classList.add('hover:text-gray-600', 'hover:bg-gray-50', 'dark:hover:bg-gray-800', 'dark:hover:text-gray-300');
-            });
-            document.querySelector(`a[onclick="showTab('${tabId}')"]`).classList.add('text-blue-600', 'bg-gray-100', 'dark:bg-gray-800', 'dark:text-blue-500');
-            document.querySelector(`a[onclick="showTab('${tabId}')"]`).classList.remove('hover:text-gray-600', 'hover:bg-gray-50', 'dark:hover:bg-gray-800', 'dark:hover:text-gray-300');
+            // This function is no longer needed as we're using server-side tab switching
         }
 
         function openDocumentModal(docData) {

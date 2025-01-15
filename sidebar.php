@@ -55,7 +55,7 @@ $sharedMenuItems = [
         ['url' => 'documents_to_sign.php', 'text' => 'Documents to Sign', 'badge' => $documentsToSignCount],
     ]],
     ['url' => 'activity_log.php', 'icon' => 'fas fa-history', 'text' => 'Activity Log'],
-    ['url' => 'insights_hub.php', 'icon' => 'fas fa-chart-line', 'text' => 'Insight Hub'],
+    ['url' => 'insights_hub.php', 'icon' => 'fas fa-chart-line', 'text' => 'Support Center'],
     ['url' => 'chat.php', 'icon' => 'fas fa-comments', 'text' => 'Live Chat', 'badge' => $unreadMessagesCount],
 ];
 
@@ -71,6 +71,7 @@ $menuItems = $sharedMenuItems;
 if ($user['role'] === 'admin') {
     $menuItems = array_merge($menuItems, $adminMenuItems);
 }
+$menuItems[] = ['url' => 'edit_profile.php', 'icon' => 'fas fa-user-edit', 'text' => 'Edit Profile'];
 
 function renderMenuItem($item, $isAdmin) {
     // Get current page URL for comparison
@@ -82,27 +83,27 @@ function renderMenuItem($item, $isAdmin) {
         $submenuHtml .= '<ul class="ml-4 mt-2 space-y-2 hidden submenu">';
         foreach ($item['submenu'] as $subitem) {
             $isSubActive = basename($subitem['url']) === $currentPage;
-            $activeSubClass = $isSubActive ? 'bg-primary/10 dark:bg-primary-dark/20' : '';
+            $activeSubClass = $isSubActive ? 'bg-sidebar-hover' : '';
             $badgeHtml = isset($subitem['badge']) && $subitem['badge'] > 0 ? '<span class="inline-flex items-center justify-center w-5 h-5 ml-2 text-xs font-semibold text-white bg-red-500 rounded-full">' . $subitem['badge'] . '</span>' : '';
-            $submenuHtml .= '<li><a href="' . $subitem['url'] . '" class="flex items-center p-2 text-gray-600 rounded-lg dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 group ' . $activeSubClass . '">' . $subitem['text'] . $badgeHtml . '</a></li>';
+            $submenuHtml .= '<li><a href="' . $subitem['url'] . '" class="flex items-center p-2 text-white rounded-lg hover:bg-sidebar-hover group ' . $activeSubClass . '">' . $subitem['text'] . $badgeHtml . '</a></li>';
         }
         $submenuHtml .= '</ul>';
     }
 
     // Add active state classes
-    $adminClass = $isAdmin ? 'border-l-4 border-primary dark:border-primary-dark pl-3' : '';
+    $adminClass = $isAdmin ? 'border-l-4 border-sidebar-text pl-3' : '';
     $dropdownClass = isset($item['submenu']) ? 'dropdown-toggle' : '';
-    $activeClass = $isActive ? 'bg-primary/10 dark:bg-primary-dark/20 text-primary dark:text-primary-dark' : '';
+    $activeClass = $isActive ? 'bg-sidebar-hover text-white' : '';
 
     $badgeHtml = isset($item['badge']) && $item['badge'] > 0 ? '<span class="inline-flex items-center justify-center w-5 h-5 ml-2 text-xs font-semibold text-white bg-red-500 rounded-full">' . $item['badge'] . '</span>' : '';
 
     return '
     <li>
-        <a href="' . $item['url'] . '" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group ' . $adminClass . ' ' . $dropdownClass . ' ' . $activeClass . '">
-            <i class="' . $item['icon'] . ' w-5 h-5 text-gray-500 dark:text-gray-400 group-hover:text-primary dark:group-hover:text-primary-dark transition duration-75 ' . ($isActive ? 'text-primary dark:text-primary-dark' : '') . '"></i>
+        <a href="' . $item['url'] . '" class="flex items-center p-2 text-white rounded-lg hover:bg-sidebar-hover group ' . $adminClass . ' ' . $dropdownClass . ' ' . $activeClass . '">
+            <i class="' . $item['icon'] . ' w-5 h-5 text-sidebar-text group-hover:text-sidebar-text ' . ($isActive ? 'text-white' : '') . '"></i>
             <span class="ml-3">' . $item['text'] . '</span>
             ' . $badgeHtml . '
-            ' . (isset($item['submenu']) ? '<i class="fas fa-chevron-down ml-auto text-gray-500 dark:text-gray-400 group-hover:text-primary dark:group-hover:text-primary-dark transition-transform duration-200"></i>' : '') . '
+            ' . (isset($item['submenu']) ? '<i class="fas fa-chevron-down ml-auto text-sidebar-text group-hover:text-sidebar-text transition-transform duration-200"></i>' : '') . '
         </a>
         ' . $submenuHtml . '
     </li>';
@@ -124,8 +125,16 @@ function renderMenuItem($item, $isAdmin) {
                     colors: {
                         primary: {
                             DEFAULT: '#880404',
-                            dark: '#a61b1b',    // Lighter shade for dark mode
-                            light: '#880404',    // Original shade for light mode
+                            dark: '#880404',
+                        },
+                        hover: {
+                            DEFAULT: '#deb80cf8',
+                            dark: '#deb80cf8',
+                        },
+                        sidebar: {
+                            bg: '#880404',
+                            text: 'white',
+                            hover: '#deb80cf8',
                         }
                     }
                 }
@@ -135,19 +144,19 @@ function renderMenuItem($item, $isAdmin) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     <script src="theme.js"></script>
 </head>
-<body>
+<body class="bg-gray-100 dark:bg-gray-900">
     <div id="sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform -translate-x-full sm:translate-x-0">
-        <div class="h-full px-3 py-4 overflow-y-auto bg-gray-50 dark:bg-gray-800">
-            <div class="flex flex-col items-center justify-center mb-5 pb-3 border-b border-gray-200 dark:border-gray-700">
+        <div class="h-full px-3 py-4 overflow-y-auto bg-sidebar-bg text-sidebar-text">
+            <div class="flex flex-col items-center justify-center mb-5 pb-3 border-b border-sidebar-text">
                 <?php if ($user['role'] === 'admin'): ?>
-                    <div class="w-16 h-16 bg-primary dark:bg-primary-dark rounded-full flex items-center justify-center mb-2">
-                        <i class="fas fa-user-shield text-3xl text-white"></i>
+                    <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-2">
+                        <i class="fas fa-user-shield text-3xl text-primary"></i>
                     </div>
-                    <span class="text-xl font-bold text-primary dark:text-primary-dark">SignEase Admin</span>
+                    <span class="text-xl font-bold text-white">SignEase Admin</span>
                 <?php else: ?>
-                    <span class="text-xl font-semibold text-primary dark:text-primary-dark">SignEase</span>
+                    <span class="text-xl font-semibold text-white">SignEase</span>
                 <?php endif; ?>
-                <button id="sidebarToggle" class="mt-2 text-gray-500 focus:outline-none sm:hidden">
+                <button id="sidebarToggle" class="mt-2 text-white focus:outline-none sm:hidden">
                     <i class="fas fa-bars"></i>
                 </button>
             </div>
@@ -158,32 +167,26 @@ function renderMenuItem($item, $isAdmin) {
                 }
                 ?>
                 <li>
-                    <button id="themeToggle" class="flex items-center w-full p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                        <i id="themeIcon" class="fas fa-sun w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-primary dark:group-hover:text-primary-dark"></i>
+                    <button id="themeToggle" class="flex items-center w-full p-2 text-sidebar-text rounded-lg hover:bg-sidebar-hover group">
+                        <i id="themeIcon" class="fas fa-sun w-5 h-5 text-sidebar-text transition duration-75 group-hover:text-sidebar-text"></i>
                         <span class="ml-3">Toggle Theme</span>
                     </button>
                 </li>
             </ul>
-            <div class="pt-4 mt-4 space-y-2 font-medium border-t border-gray-200 dark:border-gray-700">
-                <div id="userProfileTrigger" class="flex items-center p-2 text-gray-900 dark:text-white cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+            <div class="pt-4 mt-4 space-y-2 font-medium border-t border-sidebar-text">
+                <div id="userProfileTrigger" class="flex items-center p-2 text-white cursor-pointer hover:bg-sidebar-hover rounded-lg">
                     <div class="flex-shrink-0">
-                        <div class="w-10 h-10 rounded-full bg-primary dark:bg-primary-dark flex items-center justify-center">
-                            <span class="text-xl font-semibold text-white"><?php echo strtoupper(substr($user['name'], 0, 1)); ?></span>
+                        <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center">
+                            <span class="text-xl font-semibold text-primary"><?php echo strtoupper(substr($user['name'], 0, 1)); ?></span>
                         </div>
                     </div>
                     <div class="ml-3">
                         <p class="text-sm font-semibold"><?php echo htmlspecialchars($user['name']); ?></p>
-                        <p class="text-xs text-gray-500 dark:text-gray-400"><?php echo htmlspecialchars($user['email']); ?></p>
+                        <p class="text-xs text-white"><?php echo htmlspecialchars($user['email']); ?></p>
                     </div>
                 </div>
-                <div id="userProfileMenu" class="hidden ml-2">
-                    <a href="edit_profile.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                        <i class="fas fa-user-edit w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-primary dark:group-hover:text-primary-dark"></i>
-                        <span class="ml-3">Edit Profile</span>
-                    </a>
-                </div>
-                <a href="logout.php" class="flex items-center p-2 text-gray-900 rounded-lg dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group">
-                    <i class="fas fa-sign-out-alt w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-primary dark:group-hover:text-primary-dark"></i>
+                <a href="logout.php" class="flex items-center p-2 text-white rounded-lg hover:bg-sidebar-hover group">
+                    <i class="fas fa-sign-out-alt w-5 h-5 text-sidebar-text group-hover:text-sidebar-text"></i>
                     <span class="ml-3">Logout</span>
                 </a>
             </div>
@@ -193,14 +196,9 @@ function renderMenuItem($item, $isAdmin) {
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const userProfileTrigger = document.getElementById('userProfileTrigger');
-            const userProfileMenu = document.getElementById('userProfileMenu');
             const themeToggle = document.getElementById('themeToggle');
             const themeIcon = document.getElementById('themeIcon');
             const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
-
-            userProfileTrigger.addEventListener('click', function() {
-                userProfileMenu.classList.toggle('hidden');
-            });
 
             dropdownToggles.forEach(toggle => {
                 toggle.addEventListener('click', function(e) {
@@ -214,8 +212,8 @@ function renderMenuItem($item, $isAdmin) {
 
             function updateThemeIcon(theme) {
                 themeIcon.className = theme === 'dark'
-                    ? 'fas fa-moon w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-primary dark:group-hover:text-primary-dark'
-                    : 'fas fa-sun w-5 h-5 text-gray-500 transition duration-75 dark:text-gray-400 group-hover:text-primary dark:group-hover:text-primary-dark';
+                    ? 'fas fa-moon w-5 h-5 text-sidebar-text transition duration-75 group-hover:text-sidebar-text'
+                    : 'fas fa-sun w-5 h-5 text-sidebar-text transition duration-75 group-hover:text-sidebar-text';
             }
 
             themeToggle.addEventListener('click', function() {
@@ -232,3 +230,4 @@ function renderMenuItem($item, $isAdmin) {
     </script>
 </body>
 </html>
+

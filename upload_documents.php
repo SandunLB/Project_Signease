@@ -32,6 +32,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $requirements = isset($_POST['requirements']) ? implode(", ", $_POST['requirements']) : "";
     $description = $_POST['description'];
     $status = 'sent'; // Initial status when document is uploaded
+    
+    // Add this line to get the due date
+    $due_date = !empty($_POST['due_date']) ? $_POST['due_date'] : date('Y-m-d', strtotime('+1 week'));
 
     $target_dir = "uploads/";
     $uploadOk = 1;
@@ -106,10 +109,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     if ($uploadOk == 1) {
-        $sql = "INSERT INTO documents (sender_id, recipient_id, file_path, drive_link, requirements, description, status) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)";
+        // Update the SQL query to include the due_date column
+        $sql = "INSERT INTO documents (sender_id, recipient_id, file_path, drive_link, requirements, description, status, due_date) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $conn->prepare($sql);
-        $stmt->bind_param("iisssss", $sender_id, $recipient_id, $target_file, $drive_link, $requirements, $description, $status);
+        $stmt->bind_param("iissssss", $sender_id, $recipient_id, $target_file, $drive_link, $requirements, $description, $status, $due_date);
 
         if ($stmt->execute()) {
             $upload_message = "Success: The file has been uploaded and sent to the recipient.";
@@ -168,7 +172,16 @@ $stmt->close();
 <body class="bg-gray-100 dark:bg-gray-900" x-data="{ uploadMethod: 'local', isLoading: false, message: '<?php echo addslashes($upload_message); ?>' }">
     <div class="p-4 sm:ml-64">
         <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
-            <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Document Upload</h1>
+        <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Document Upload</h1>
+                <a href="doc_creator/index.html" 
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md">
+                    <i class="fas fa-plus mr-2"></i>
+                    Create New Document
+                </a>
+            </div>
             
             <div x-show="message" x-cloak
                  x-bind:class="{'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100': message.includes('Success'), 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100': message.includes('Error')}"
@@ -253,6 +266,13 @@ $stmt->close();
                     <textarea id="description" name="description" rows="3"
                               class="block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white sm:text-sm"
                               placeholder="Enter any additional instructions or information here..."></textarea>
+                </div>
+
+                <div>
+                    <label for="due_date" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Due Date (Optional)</label>
+                    <input type="date" id="due_date" name="due_date"
+                           class="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-white">
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">If not selected, due date will be set to 1 week from today.</p>
                 </div>
 
                 <div>
