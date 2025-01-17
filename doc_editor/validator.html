@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Validator</title>
+    <style>
+        .validator-container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .result-card {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border-radius: 6px;
+            display: none;
+        }
+        
+        .result-card.valid {
+            background-color: #f0fdf4;
+            border: 1px solid #86efac;
+        }
+        
+        .result-card.invalid {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+        }
+        
+        .metadata-section {
+            margin-top: 2rem;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 1rem;
+        }
+        
+        .metadata-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .metadata-item {
+            padding: 0.75rem;
+            background-color: #f8fafc;
+            border-radius: 4px;
+        }
+
+        .metadata-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 1rem;
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            padding: 1rem;
+            background-color: #f8fafc;
+            border-radius: 4px;
+        }
+    </style>
+  <script type="module" crossorigin src="./js/validator-CWORwOvj.js"></script>
+  <link rel="modulepreload" crossorigin href="./js/index-C9DtHrF_.js">
+  <link rel="stylesheet" crossorigin href="./assets/index-D0hA3PbS.css">
+</head>
+<body class="bg-gray-100">
+    <div class="validator-container">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Document Validator</h1>
+        <p class="text-gray-600 mb-6">Upload a signed PDF document to verify its authenticity and view its metadata.</p>
+        
+        <div class="mb-6">
+            <input type="file" id="validation-upload" accept="application/pdf" 
+                   class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 
+                          file:rounded-full file:border-0 file:text-sm file:font-semibold 
+                          file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+        </div>
+        
+        <button id="validate-btn" 
+                class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg 
+                       hover:bg-blue-700 transition-colors font-semibold">
+            Validate Document
+        </button>
+        
+        <!-- Results Card -->
+        <div id="result-card" class="result-card">
+            <div class="flex items-center mb-4">
+                <span id="status-icon" class="mr-3 text-2xl">✓</span>
+                <h2 id="result-title" class="text-xl font-semibold"></h2>
+            </div>
+            
+            <!-- Document Details -->
+            <div class="metadata-section">
+                <h3 class="metadata-title">Document Details</h3>
+                <div class="metadata-grid">
+                    <div class="metadata-item">
+                        <p class="text-sm text-gray-500">File Name</p>
+                        <p id="doc-filename" class="font-medium"></p>
+                    </div>
+                    <div class="metadata-item">
+                        <p class="text-sm text-gray-500">Status</p>
+                        <p id="doc-status" class="font-medium"></p>
+                    </div>
+                    <div class="metadata-item">
+                        <p class="text-sm text-gray-500">Upload Date</p>
+                        <p id="doc-upload-date" class="font-medium"></p>
+                    </div>
+                    <div class="metadata-item">
+                        <p class="text-sm text-gray-500">Signed Date</p>
+                        <p id="doc-signed-date" class="font-medium"></p>
+                    </div>
+                    <div class="metadata-item">
+                        <p class="text-sm text-gray-500">Due Date</p>
+                        <p id="doc-due-date" class="font-medium"></p>
+                    </div>
+                    <div class="metadata-item">
+                        <p class="text-sm text-gray-500">Requirements</p>
+                        <p id="doc-requirements" class="font-medium"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sender Information -->
+            <div class="metadata-section">
+                <h3 class="metadata-title">Sender Information</h3>
+                <div class="user-info">
+                    <p><span class="text-gray-500">Name:</span> <span id="sender-name" class="font-medium"></span></p>
+                    <p><span class="text-gray-500">Position:</span> <span id="sender-position" class="font-medium"></span></p>
+                    <p><span class="text-gray-500">Faculty:</span> <span id="sender-faculty" class="font-medium"></span></p>
+                </div>
+            </div>
+
+            <!-- Recipient Information -->
+            <div class="metadata-section">
+                <h3 class="metadata-title">Recipient Information</h3>
+                <div class="user-info">
+                    <p><span class="text-gray-500">Name:</span> <span id="recipient-name" class="font-medium"></span></p>
+                    <p><span class="text-gray-500">Position:</span> <span id="recipient-position" class="font-medium"></span></p>
+                    <p><span class="text-gray-500">Faculty:</span> <span id="recipient-faculty" class="font-medium"></span></p>
+                </div>
+            </div>
+
+            <!-- Hash Information -->
+            <div class="metadata-section">
+                <h3 class="metadata-title">Security Information</h3>
+                <div class="metadata-item">
+                    <p class="text-sm text-gray-500">Document Hash</p>
+                    <p id="doc-hash" class="font-medium text-xs break-all"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-lg shadow-xl">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p class="mt-4 text-gray-700 text-center font-medium">Validating document...</p>
+        </div>
+    </div>
+
+</body>
+</html>

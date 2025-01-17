@@ -57,6 +57,7 @@ $sharedMenuItems = [
     ['url' => 'activity_log.php', 'icon' => 'fas fa-history', 'text' => 'Activity Log'],
     ['url' => 'insights_hub.php', 'icon' => 'fas fa-chart-line', 'text' => 'Support Center'],
     ['url' => 'chat.php', 'icon' => 'fas fa-comments', 'text' => 'Live Chat', 'badge' => $unreadMessagesCount],
+    ['url' => 'validator.php', 'icon' => 'fas fa-check-circle', 'text' => 'Document Validator'],
 ];
 
 // Define admin-specific menu items
