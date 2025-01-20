@@ -14,7 +14,7 @@ $user_id = $_SESSION['user_id'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document Validator - SignEase</title>
+    <title>Document Verification - SignEase</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * {
@@ -92,16 +92,16 @@ $user_id = $_SESSION['user_id'];
             100% { background-color: rgba(239, 68, 68, 0); }
         }
     </style>
-    <script type="module" crossorigin src="./doc_editor/js/validator-CWORwOvj.js"></script>
-    <link rel="modulepreload" crossorigin href="./doc_editor/js/index-C9DtHrF_.js">
-    <link rel="stylesheet" crossorigin href="./doc_editor/assets/index-D0hA3PbS.css">
+    <script type="module" crossorigin src="./doc_editor/js/validator-wxUbiz82.js"></script>
+    <link rel="modulepreload" crossorigin href="./doc_editor/js/index-BhysBmqz.js">
+    <link rel="stylesheet" crossorigin href="./doc_editor/assets/index-BBjXrYJ7.css">
 </head>
 <body class="bg-gray-100 dark:bg-gray-900">
     <div class="p-4 sm:ml-64">
         <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
             <div class="flex items-center mb-6">
                 <i class="fas fa-shield-alt text-3xl text-blue-600 dark:text-blue-400 mr-4"></i>
-                <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Document Validator</h1>
+                <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Verify Document</h1>
             </div>
             
             <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 animate-fade-in">
@@ -136,7 +136,7 @@ $user_id = $_SESSION['user_id'];
                                dark:bg-blue-500 dark:hover:bg-blue-600
                                flex items-center justify-center gap-2">
                     <i class="fas fa-check-circle"></i>
-                    Validate Document
+                    Verify Document
                 </button>
                 
                 <!-- Results Card -->
@@ -207,7 +207,7 @@ $user_id = $_SESSION['user_id'];
                         </div>
                     </div>
 
-                    <!-- Hash Information -->
+                    <!-- Hash Information
                     <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
                         <div class="flex items-center mb-4">
                             <i class="fas fa-fingerprint text-blue-500 dark:text-blue-400 mr-3"></i>
@@ -216,7 +216,7 @@ $user_id = $_SESSION['user_id'];
                         <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                             <p class="text-sm text-gray-500 dark:text-gray-400">Document Hash (Click to copy)</p>
                             <p id="doc-hash" class="font-mono text-xs break-all text-gray-800 dark:text-white mt-2 p-2 bg-gray-100 dark:bg-gray-600 rounded cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"></p>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
             </div>

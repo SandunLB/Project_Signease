@@ -261,38 +261,75 @@ ob_end_flush();
         <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 animate-fadeIn">
             <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Reports</h1>
             
-            <!-- Filter Form -->
-            <form method="post" class="mb-6 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg animate-slideDown">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <div class="space-y-2">
-                        <label for="start_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
-                        <input type="date" id="start_date" name="start_date" value="<?php echo $start_date; ?>" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                <!-- Filter Form -->
+                <form method="post" class="mb-6 bg-white dark:bg-gray-800 p-5 rounded-lg shadow-lg animate-slideDown">
+                    <div class="mb-3">
+                        <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Filter Documents</h2>
+                        <div class="w-full h-0.5 bg-blue-500 mb-4"></div>
                     </div>
-                    <div class="space-y-2">
-                        <label for="end_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
-                        <input type="date" id="end_date" name="end_date" value="<?php echo $end_date; ?>" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="space-y-1">
+                            <label for="start_date" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                <i class="fas fa-calendar-alt mr-1"></i>Start Date
+                            </label>
+                            <input type="date" id="start_date" name="start_date" value="<?php echo $start_date; ?>" 
+                                class="mt-1 block w-full p-2 rounded-md border border-gray-300 shadow-sm 
+                                focus:border-blue-500 focus:ring focus:ring-blue-200 
+                                dark:bg-gray-700 dark:border-gray-600 dark:text-white 
+                                text-sm transition duration-300">
+                        </div>
+                        
+                        <div class="space-y-1">
+                            <label for="end_date" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                <i class="fas fa-calendar-alt mr-1"></i>End Date
+                            </label>
+                            <input type="date" id="end_date" name="end_date" value="<?php echo $end_date; ?>" 
+                                class="mt-1 block w-full p-2 rounded-md border border-gray-300 shadow-sm 
+                                focus:border-blue-500 focus:ring focus:ring-blue-200 
+                                dark:bg-gray-700 dark:border-gray-600 dark:text-white 
+                                text-sm transition duration-300">
+                        </div>
+                        
+                        <div class="space-y-1">
+                            <label for="keyword" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                <i class="fas fa-search mr-1"></i>Keyword
+                            </label>
+                            <input type="text" id="keyword" name="keyword" value="<?php echo $keyword; ?>" 
+                                placeholder="Search documents..." 
+                                class="mt-1 block w-full p-2 rounded-md border border-gray-300 shadow-sm 
+                                focus:border-blue-500 focus:ring focus:ring-blue-200 
+                                dark:bg-gray-700 dark:border-gray-600 dark:text-white 
+                                text-sm transition duration-300">
+                        </div>
+                        
+                        <div class="space-y-1">
+                            <label for="status" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                <i class="fas fa-filter mr-1"></i>Status
+                            </label>
+                            <select id="status" name="status" 
+                                class="mt-1 block w-full p-2 rounded-md border border-gray-300 shadow-sm 
+                                focus:border-blue-500 focus:ring focus:ring-blue-200 
+                                dark:bg-gray-700 dark:border-gray-600 dark:text-white 
+                                text-sm transition duration-300">
+                                <option value="">All Statuses</option>
+                                <option value="sent" <?php echo $status === 'sent' ? 'selected' : ''; ?>>Sent</option>
+                                <option value="pending" <?php echo $status === 'pending' ? 'selected' : ''; ?>>Pending</option>
+                                <option value="signed" <?php echo $status === 'signed' ? 'selected' : ''; ?>>Signed</option>
+                                <option value="completed" <?php echo $status === 'completed' ? 'selected' : ''; ?>>Completed</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="space-y-2">
-                        <label for="keyword" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Keyword</label>
-                        <input type="text" id="keyword" name="keyword" value="<?php echo $keyword; ?>" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    
+                    <div class="mt-4 flex justify-end">
+                        <button type="submit" 
+                            class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md 
+                            transition duration-300 ease-in-out focus:outline-none focus:ring-2 
+                            focus:ring-blue-500 focus:ring-opacity-50 text-sm">
+                            <i class="fas fa-filter mr-1"></i> Apply Filters
+                        </button>
                     </div>
-                    <div class="space-y-2">
-                        <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
-                        <select id="status" name="status" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                            <option value="">All</option>
-                            <option value="sent" <?php echo $status === 'sent' ? 'selected' : ''; ?>>Sent</option>
-                            <option value="pending" <?php echo $status === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                            <option value="signed" <?php echo $status === 'signed' ? 'selected' : ''; ?>>Signed</option>
-                            <option value="completed" <?php echo $status === 'completed' ? 'selected' : ''; ?>>Completed</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="mt-6 flex justify-end">
-                    <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
-                        <i class="fas fa-filter mr-2"></i> Apply Filters
-                    </button>
-                </div>
-            </form>
+                </form>
 
             <!-- Documents Table -->
             <form method="post" id="reportForm">

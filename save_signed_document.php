@@ -1,8 +1,9 @@
 <?php
 include 'config.php';
 include 'session.php';
+include 'mail_config.php';
 
-// Set timezone to Sri Lanka (assuming you're in Sri Lanka)
+// Set timezone to Sri Lanka
 date_default_timezone_set('Asia/Colombo');
 
 // Check if user is logged in
@@ -55,13 +56,17 @@ try {
         throw new Exception('Failed to update document status');
     }
 
-    // Get the document ID
-    $sql = "SELECT id FROM documents WHERE signed_file_path = ? LIMIT 1";
+    // Get the document ID and sender information
+    $sql = "SELECT d.id, d.file_path, u.email as sender_email, u.name as sender_name, d.requirements 
+            FROM documents d 
+            JOIN users u ON d.sender_id = u.id 
+            WHERE d.signed_file_path = ? 
+            LIMIT 1";
     $stmt = $conn->prepare($sql);
     $stmt->bind_param("s", $filepath);
     
     if (!$stmt->execute()) {
-        throw new Exception('Failed to retrieve document ID');
+        throw new Exception('Failed to retrieve document information');
     }
     
     $result = $stmt->get_result();
@@ -88,7 +93,51 @@ try {
 
     // Commit transaction
     $conn->commit();
-    echo json_encode(['success' => true, 'message' => 'Document signed and metadata stored successfully']);
+
+    // Send email notification
+    try {
+        $mail = configureMailer();
+        $mail->addAddress($document['sender_email'], $document['sender_name']);
+        $mail->Subject = 'Document Signed Notification - SignEase';
+        $mail->Body = "
+            <div style='font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 5px;'>
+                <h2 style='color: #2563eb; margin-bottom: 20px;'>Document Signing Notification</h2>
+                
+                <p>Hello {$document['sender_name']},</p>
+                
+                <p>Your document has been successfully signed by the recipient.</p>
+                
+                <div style='background-color: #f8fafc; padding: 15px; border-radius: 5px; margin: 20px 0;'>
+                    <h3 style='color: #374151; margin-bottom: 10px;'>Document Details:</h3>
+                    <ul style='list-style: none; padding: 0; margin: 0;'>
+                        <li style='margin-bottom: 8px;'><strong>Document ID:</strong> {$document['id']}</li>
+                        <li style='margin-bottom: 8px;'><strong>Original File:</strong> " . basename($document['file_path']) . "</li>
+                        <li style='margin-bottom: 8px;'><strong>Requirements:</strong> {$document['requirements']}</li>
+                        <li style='margin-bottom: 8px;'><strong>Signed Date:</strong> {$current_time}</li>
+                    </ul>
+                </div>
+
+                <p>You can view and download the signed document from your SignEase dashboard.</p>
+                
+                <p style='margin-top: 20px;'>Thank you for using SignEase!</p>
+                
+                <div style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #6b7280;'>
+                    <p>This is an automated message, please do not reply to this email.</p>
+                </div>
+            </div>";
+
+        $mail->send();
+        echo json_encode([
+            'success' => true, 
+            'message' => 'Document signed and notification sent successfully'
+        ]);
+    } catch (Exception $e) {
+        error_log("Email sending failed: {$mail->ErrorInfo}");
+        echo json_encode([
+            'success' => true,
+            'message' => 'Document signed successfully but notification email failed'
+        ]);
+    }
 
 } catch (Exception $e) {
     // Rollback on error

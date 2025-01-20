@@ -25,6 +25,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action']) && isset($_P
     $stmt->close();
 }
 
+// Handle user deletion
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_user'])) {
+    $user_id = $_POST['user_id'];
+    
+    $sql = "DELETE FROM users WHERE id = ?";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("i", $user_id);
+    $stmt->execute();
+    $stmt->close();
+    
+    // Instead of using header redirect, use JavaScript
+    echo "<script>window.location.href = 'user_management.php';</script>";
+    exit();
+}
+
 // Handle user update
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_user'])) {
     $user_id = $_POST['user_id'];
@@ -151,7 +166,7 @@ $result_pending = $stmt_pending->get_result();
                     <input 
                         type="text" 
                         name="search" 
-                        placeholder="Search documents..." 
+                        placeholder="Search users..." 
                         value="<?php echo htmlspecialchars($search); ?>" 
                         class="w-10 p-2 border rounded-full transition-all duration-300 focus:w-64 group-hover:w-64 dark:bg-gray-700 dark:text-white opacity-0 focus:opacity-100 group-hover:opacity-100 outline-none border-blue-500"
                     >
@@ -324,9 +339,12 @@ $result_pending = $stmt_pending->get_result();
                                     </select>
                                 </div>
                             </div>
-                            <div class="mt-4">
+                            <div class="mt-4 flex space-x-2">
                                 <button type="submit" name="update_user" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-blue-500 dark:hover:bg-blue-600">
                                     Update User
+                                </button>
+                                <button type="submit" name="delete_user" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:bg-red-500 dark:hover:bg-red-600" onclick="return confirm('Are you sure you want to delete this user?')">
+                                    Delete User
                                 </button>
                             </div>
                         </form>
@@ -342,10 +360,6 @@ $result_pending = $stmt_pending->get_result();
     </div>
 
     <script>
-        function showTab(tabId) {
-            // This function is no longer needed as we're using server-side tab switching
-        }
-
         function openUpdateModal(user) {
             document.getElementById('update_user_id').value = user.id;
             document.getElementById('update_name').value = user.name;
