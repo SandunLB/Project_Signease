@@ -1,6 +1,7 @@
 <?php
 include 'sidebar.php';
-// Note: sidebar.php already includes config.php and session.php, so we don't need to include them again
+include 'mail_config.php';
+// Note: sidebar.php already includes config.php and session.php
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -25,6 +26,20 @@ function getGoogleDriveFileId($url) {
     return null;
 }
 
+function getUniqueFilename($target_dir, $filename) {
+    $original_name = pathinfo($filename, PATHINFO_FILENAME);
+    $extension = pathinfo($filename, PATHINFO_EXTENSION);
+    $counter = 1;
+    
+    // Keep checking until we find a unique filename
+    while (file_exists($target_dir . $filename)) {
+        $filename = $original_name . " ({$counter})." . $extension;
+        $counter++;
+    }
+    
+    return $filename;
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $sender_id = $_SESSION['user_id'];
     $recipient_id = $_POST['recipient'];
@@ -39,13 +54,38 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $target_dir = "uploads/";
     $uploadOk = 1;
 
-    if (!empty($drive_link)) {
+    // Handle file upload
+    if (isset($_FILES["document"]) && $_FILES["document"]["error"] == 0) {
+        $original_filename = basename($_FILES["document"]["name"]);
+        $filename = getUniqueFilename($target_dir, $original_filename);
+        $target_file = $target_dir . $filename;
+        $fileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+
+        // Check file size
+        if ($_FILES["document"]["size"] > 5000000) {
+            $upload_message = "Error: Your file is too large (max 5MB).";
+            $uploadOk = 0;
+        }
+
+        // Check file type
+        $allowed_extensions = array("pdf", "doc", "docx", "txt");
+        if (!in_array($fileType, $allowed_extensions)) {
+            $upload_message = "Error: Only PDF, DOC, DOCX & TXT files are allowed.";
+            $uploadOk = 0;
+        }
+
+        if ($uploadOk == 1 && !move_uploaded_file($_FILES["document"]["tmp_name"], $target_file)) {
+            $upload_message = "Error: There was an error uploading your file.";
+            $uploadOk = 0;
+        }
+    } elseif (!empty($drive_link)) {
         $file_id = getGoogleDriveFileId($drive_link);
         
         if ($file_id) {
             $download_url = "https://drive.google.com/uc?export=download&id=" . $file_id;
-            $file_name = uniqid('gdrive_') . '.pdf';
-            $target_file = $target_dir . $file_name;
+            $original_filename = uniqid('gdrive_') . '.pdf';
+            $filename = getUniqueFilename($target_dir, $original_filename);
+            $target_file = $target_dir . $filename;
 
             $ch = curl_init($download_url);
             $fp = fopen($target_file, 'wb');
@@ -79,36 +119,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $upload_message = "Error: Invalid Google Drive link format.";
             $uploadOk = 0;
         }
-    } elseif (isset($_FILES["document"]) && $_FILES["document"]["error"] == 0) {
-        $target_file = $target_dir . basename($_FILES["document"]["name"]);
-        $fileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-
-        if (file_exists($target_file)) {
-            $upload_message = "Error: File already exists.";
-            $uploadOk = 0;
-        }
-
-        if ($_FILES["document"]["size"] > 5000000) {
-            $upload_message = "Error: Your file is too large (max 5MB).";
-            $uploadOk = 0;
-        }
-
-        $allowed_extensions = array("pdf", "doc", "docx", "txt");
-        if (!in_array($fileType, $allowed_extensions)) {
-            $upload_message = "Error: Only PDF, DOC, DOCX & TXT files are allowed.";
-            $uploadOk = 0;
-        }
-
-        if ($uploadOk == 1 && !move_uploaded_file($_FILES["document"]["tmp_name"], $target_file)) {
-            $upload_message = "Error: There was an error uploading your file.";
-            $uploadOk = 0;
-        }
     } else {
         $upload_message = "Error: No file was uploaded or provided via Google Drive link.";
         $uploadOk = 0;
     }
 
     if ($uploadOk == 1) {
+        // Get sender's name for the email
+        $sender_sql = "SELECT name FROM users WHERE id = ?";
+        $sender_stmt = $conn->prepare($sender_sql);
+        $sender_stmt->bind_param("i", $sender_id);
+        $sender_stmt->execute();
+        $sender_result = $sender_stmt->get_result();
+        $sender_data = $sender_result->fetch_assoc();
+        $sender_name = $sender_data['name'];
+
         // Update the SQL query to include the due_date column
         $sql = "INSERT INTO documents (sender_id, recipient_id, file_path, drive_link, requirements, description, status, due_date) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
@@ -116,7 +141,56 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt->bind_param("iissssss", $sender_id, $recipient_id, $target_file, $drive_link, $requirements, $description, $status, $due_date);
 
         if ($stmt->execute()) {
-            $upload_message = "Success: The file has been uploaded and sent to the recipient.";
+            try {
+                // Get recipient's email
+                $recipient_sql = "SELECT name, email FROM users WHERE id = ?";
+                $recipient_stmt = $conn->prepare($recipient_sql);
+                $recipient_stmt->bind_param("i", $recipient_id);
+                $recipient_stmt->execute();
+                $recipient_result = $recipient_stmt->get_result();
+                $recipient_data = $recipient_result->fetch_assoc();
+
+                // Send email notification
+                $mail = configureMailer();
+                $mail->addAddress($recipient_data['email'], $recipient_data['name']);
+                $mail->Subject = 'New Document for Signing - SignEase';
+                $mail->Body = "
+                    <div style='font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; border: 1px solid #ddd; border-radius: 5px;'>
+                        <h2 style='color: #2563eb; margin-bottom: 20px;'>New Document Ready for Signing</h2>
+                        
+                        <p>Hello {$recipient_data['name']},</p>
+                        
+                        <p>A new document has been sent to you by {$sender_name} for signing through SignEase.</p>
+                        
+                        <div style='background-color: #f8fafc; padding: 15px; border-radius: 5px; margin: 20px 0;'>
+                            <h3 style='color: #374151; margin-bottom: 10px;'>Document Details:</h3>
+                            <ul style='list-style: none; padding: 0; margin: 0;'>
+                                <li style='margin-bottom: 8px;'><strong>Sender:</strong> {$sender_name}</li>
+                                <li style='margin-bottom: 8px;'><strong>Requirements:</strong> {$requirements}</li>
+                                <li style='margin-bottom: 8px;'><strong>Due Date:</strong> {$due_date}</li>
+                                <li style='margin-bottom: 8px;'><strong>Description:</strong> {$description}</li>
+                            </ul>
+                        </div>
+
+                        <p>Please log in to your SignEase account to view and sign the document.</p>
+                        
+                        <div style='margin-top: 20px; padding: 15px; background-color: #ffedd5; border-radius: 5px;'>
+                            <p style='margin: 0; color: #9a3412;'>Note: This document needs to be signed by {$due_date}.</p>
+                        </div>
+                        
+                        <p style='margin-top: 20px;'>Thank you for using SignEase!</p>
+                        
+                        <div style='margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #6b7280;'>
+                            <p>This is an automated message, please do not reply to this email.</p>
+                        </div>
+                    </div>";
+
+                $mail->send();
+                $upload_message = "Success: The file has been uploaded and recipient has been notified by email.";
+            } catch (Exception $e) {
+                error_log("Email sending failed: {$mail->ErrorInfo}");
+                $upload_message = "Success: The file has been uploaded, but email notification failed.";
+            }
         } else {
             $upload_message = "Error: There was an error saving to the database.";
         }
@@ -124,6 +198,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
+// Get list of potential recipients
 $sql = "SELECT id, name, email FROM users WHERE status = 'approved' AND id != ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $_SESSION['user_id']);
