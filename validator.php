@@ -2,13 +2,98 @@
 ob_start();
 include 'sidebar.php';
 
+// Check if the user is logged in
 if (!isset($_SESSION['user_id'])) {
     header("Location: login_register.php");
     exit();
 }
 
 $user_id = $_SESSION['user_id'];
+
+// Handle PDF generation
+if (isset($_POST['generate_pdf'])) {
+    // Clean (erase) the output buffer and turn off output buffering
+    ob_end_clean();
+
+    require_once('fpdf/fpdf.php');
+
+    class PDF extends FPDF {
+        function Header() {
+            $this->Image('./imgs/logo3.png', 10, 8, 15); 
+            $this->SetFont('Arial', 'B', 15);
+            $this->Cell(25);
+            $this->Cell(130, 10, 'SignEase Document Validation Report', 0, 0, 'C');
+            $this->Ln(20);
+        }
+
+        function Footer() {
+            $this->SetY(-15);
+            $this->SetFont('Arial', 'I', 8);
+            $this->Cell(0, 10, 'Page ' . $this->PageNo() . '/{nb}', 0, 0, 'C');
+        }
+    }
+
+    $pdf = new PDF();
+    $pdf->AliasNbPages();
+    $pdf->AddPage();
+    $pdf->SetFont('Arial', '', 10);
+
+    // Add report details
+    $pdf->SetFillColor(255, 255, 255);
+    $pdf->SetTextColor(0, 0, 0);
+    $pdf->Cell(0, 10, 'Generated on: ' . date('Y-m-d H:i:s'), 0, 1, 'R', true);
+
+    // Add validation results
+    $pdf->SetFont('Arial', 'B', 12);
+    $pdf->Cell(0, 10, 'Validation Results', 0, 1);
+    $pdf->SetFont('Arial', '', 10);
+
+    $pdf->Cell(40, 10, 'Document Name:', 0, 0);
+    $pdf->Cell(0, 10, $_POST['doc_filename'], 0, 1);
+    $pdf->Cell(40, 10, 'Status:', 0, 0);
+    $pdf->Cell(0, 10, $_POST['doc_status'], 0, 1);
+    $pdf->Cell(40, 10, 'Upload Date:', 0, 0);
+    $pdf->Cell(0, 10, $_POST['doc_upload_date'], 0, 1);
+    $pdf->Cell(40, 10, 'Signed Date:', 0, 0);
+    $pdf->Cell(0, 10, $_POST['doc_signed_date'], 0, 1);
+    $pdf->Cell(40, 10, 'Due Date:', 0, 0);
+    $pdf->Cell(0, 10, $_POST['doc_due_date'], 0, 1);
+    $pdf->Cell(40, 10, 'Requirements:', 0, 0);
+    $pdf->Cell(0, 10, $_POST['doc_requirements'], 0, 1);
+
+    $pdf->Ln(10);
+
+    // Add sender information
+    $pdf->SetFont('Arial', 'B', 12);
+    $pdf->Cell(0, 10, 'Sender Information', 0, 1);
+    $pdf->SetFont('Arial', '', 10);
+
+    $pdf->Cell(40, 10, 'Name:', 0, 0);
+    $pdf->Cell(0, 10, $_POST['sender_name'], 0, 1);
+    $pdf->Cell(40, 10, 'Position:', 0, 0);
+    $pdf->Cell(0, 10, $_POST['sender_position'], 0, 1);
+    $pdf->Cell(40, 10, 'Faculty:', 0, 0);
+    $pdf->Cell(0, 10, $_POST['sender_faculty'], 0, 1);
+
+    $pdf->Ln(10);
+
+    // Add recipient information
+    $pdf->SetFont('Arial', 'B', 12);
+    $pdf->Cell(0, 10, 'Recipient Information', 0, 1);
+    $pdf->SetFont('Arial', '', 10);
+
+    $pdf->Cell(40, 10, 'Name:', 0, 0);
+    $pdf->Cell(0, 10, $_POST['recipient_name'], 0, 1);
+    $pdf->Cell(40, 10, 'Position:', 0, 0);
+    $pdf->Cell(0, 10, $_POST['recipient_position'], 0, 1);
+    $pdf->Cell(40, 10, 'Faculty:', 0, 0);
+    $pdf->Cell(0, 10, $_POST['recipient_faculty'], 0, 1);
+
+    $pdf->Output('D', 'validation_report.pdf');
+    exit;
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -207,16 +292,14 @@ $user_id = $_SESSION['user_id'];
                         </div>
                     </div>
 
-                    <!-- Hash Information
-                    <div class="mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
-                        <div class="flex items-center mb-4">
-                            <i class="fas fa-fingerprint text-blue-500 dark:text-blue-400 mr-3"></i>
-                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Security Information</h3>
-                        </div>
-                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Document Hash (Click to copy)</p>
-                            <p id="doc-hash" class="font-mono text-xs break-all text-gray-800 dark:text-white mt-2 p-2 bg-gray-100 dark:bg-gray-600 rounded cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"></p>
-                        </div> -->
+                    <!-- PDF Generation Button -->
+                    <div class="mt-6 flex justify-end">
+                        <button id="generate-pdf-btn" 
+                                class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg 
+                                       transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 
+                                       focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
+                            <i class="fas fa-file-pdf mr-2"></i> Download PDF Report
+                        </button>
                     </div>
                 </div>
             </div>
@@ -232,6 +315,53 @@ $user_id = $_SESSION['user_id'];
     </div>
 
     <script src="theme.js"></script>
+    <script>
+        document.getElementById('generate-pdf-btn').addEventListener('click', function() {
+            // Gather all the data from the result card
+            const docFilename = document.getElementById('doc-filename').innerText;
+            const docStatus = document.getElementById('doc-status').innerText;
+            const docUploadDate = document.getElementById('doc-upload-date').innerText;
+            const docSignedDate = document.getElementById('doc-signed-date').innerText;
+            const docDueDate = document.getElementById('doc-due-date').innerText;
+            const docRequirements = document.getElementById('doc-requirements').innerText;
+            const senderName = document.getElementById('sender-name').innerText;
+            const senderPosition = document.getElementById('sender-position').innerText;
+            const senderFaculty = document.getElementById('sender-faculty').innerText;
+            const recipientName = document.getElementById('recipient-name').innerText;
+            const recipientPosition = document.getElementById('recipient-position').innerText;
+            const recipientFaculty = document.getElementById('recipient-faculty').innerText;
+
+            // Create a form and submit it to generate the PDF
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '';
+
+            const addHiddenField = (name, value) => {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = name;
+                input.value = value;
+                form.appendChild(input);
+            };
+
+            addHiddenField('generate_pdf', 'true');
+            addHiddenField('doc_filename', docFilename);
+            addHiddenField('doc_status', docStatus);
+            addHiddenField('doc_upload_date', docUploadDate);
+            addHiddenField('doc_signed_date', docSignedDate);
+            addHiddenField('doc_due_date', docDueDate);
+            addHiddenField('doc_requirements', docRequirements);
+            addHiddenField('sender_name', senderName);
+            addHiddenField('sender_position', senderPosition);
+            addHiddenField('sender_faculty', senderFaculty);
+            addHiddenField('recipient_name', recipientName);
+            addHiddenField('recipient_position', recipientPosition);
+            addHiddenField('recipient_faculty', recipientFaculty);
+
+            document.body.appendChild(form);
+            form.submit();
+        });
+    </script>
 </body>
 </html>
 <?php ob_end_flush(); ?>
