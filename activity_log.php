@@ -1,7 +1,7 @@
 <?php
 ob_start();
 include 'sidebar.php';
-// Note: sidebar.php already includes config.php and session.php, so we don't need to include them again
+// Note: sidebar.php already includes config.php and session.php
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -16,52 +16,50 @@ $search = isset($_GET['search']) ? $_GET['search'] : '';
 if (isset($_GET['download_document'])) {
     $document_id = $_GET['download_document'];
     
-    // Update document status to 'completed'
-    $update_sql = "UPDATE documents SET status = 'completed' WHERE id = ? AND status = 'signed'";
-    $update_stmt = $conn->prepare($update_sql);
-    $update_stmt->bind_param("i", $document_id);
-    $update_stmt->execute();
-    
     // Fetch the file path
-    $file_sql = "SELECT signed_file_path FROM documents WHERE id = ?";
+    $file_sql = "SELECT signed_file_path FROM documents WHERE id = ? AND (status = 'completed' OR status = 'partially_signed')";
     $file_stmt = $conn->prepare($file_sql);
     $file_stmt->bind_param("i", $document_id);
     $file_stmt->execute();
     $file_result = $file_stmt->get_result();
     $file_row = $file_result->fetch_assoc();
     
-    if ($file_row) {
+    if ($file_row && !empty($file_row['signed_file_path'])) {
         $file_path = $file_row['signed_file_path'];
         if (file_exists($file_path)) {
-            // Clear any output that might have been sent
             ob_clean();
-            
-            // Set headers for file download
             header("Content-Type: application/pdf");
             header("Content-Disposition: attachment; filename=\"" . basename($file_path) . "\"");
             header("Content-Length: " . filesize($file_path));
-            
-            // Output file contents
             readfile($file_path);
             exit;
-        } else {
-            echo "File not found.";
         }
     }
+    echo "File not found.";
 }
 
 // Fetch sent documents with search
-$sent_sql = "SELECT d.id, d.file_path, d.signed_file_path, d.drive_link, d.requirements, d.description, d.status, d.upload_date, d.due_date,
-                    u.name AS recipient_name, u.email AS recipient_email
+$sent_sql = "SELECT d.id, d.file_path, d.signed_file_path, d.drive_link, d.requirements, 
+                    d.description, d.status, d.upload_date, d.due_date, d.current_recipient, 
+                    d.total_recipients,
+                    r1.name AS recipient1_name, r1.email AS recipient1_email,
+                    r2.name AS recipient2_name, r2.email AS recipient2_email,
+                    r3.name AS recipient3_name, r3.email AS recipient3_email
              FROM documents d
-             JOIN users u ON d.recipient_id = u.id
+             JOIN users r1 ON d.recipient_id = r1.id
+             LEFT JOIN users r2 ON d.recipient_id_2 = r2.id
+             LEFT JOIN users r3 ON d.recipient_id_3 = r3.id
              WHERE d.sender_id = ? 
-             AND (u.name LIKE ? OR u.email LIKE ? OR d.status LIKE ?)
+             AND (r1.name LIKE ? OR r1.email LIKE ? OR 
+                  r2.name LIKE ? OR r2.email LIKE ? OR 
+                  r3.name LIKE ? OR r3.email LIKE ? OR 
+                  d.status LIKE ?)
              ORDER BY d.upload_date DESC";
 
 $sent_stmt = $conn->prepare($sent_sql);
 $searchParam = "%$search%";
-$sent_stmt->bind_param("isss", $user_id, $searchParam, $searchParam, $searchParam);
+$sent_stmt->bind_param("isssssss", $user_id, $searchParam, $searchParam, $searchParam, 
+                      $searchParam, $searchParam, $searchParam, $searchParam);
 $sent_stmt->execute();
 $sent_result = $sent_stmt->get_result();
 
@@ -71,10 +69,10 @@ function getStatusClass($status) {
             return 'bg-blue-500 text-white';
         case 'pending':
             return 'bg-yellow-500 text-white';
-        case 'signed':
-            return 'bg-green-500 text-white';
+        case 'partially_signed':
+            return 'bg-orange-500 text-white';
         case 'completed':
-            return 'bg-purple-500 text-white';
+            return 'bg-green-500 text-white';
         default:
             return 'bg-gray-300 text-gray-700';
     }
@@ -99,7 +97,8 @@ function getStatusClass($status) {
             theme: {
                 extend: {
                     colors: {
-                        // Add any custom colors here
+                        primary: '#8B0000',
+                        secondary: '#FFA500',
                     }
                 }
             }
@@ -142,7 +141,7 @@ function getStatusClass($status) {
                 <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
-                            <th scope="col" class="py-3 px-6">Recipient</th>
+                            <th scope="col" class="py-3 px-6">Recipients</th>
                             <th scope="col" class="py-3 px-6">Document</th>
                             <th scope="col" class="py-3 px-6">Upload Date</th>
                             <th scope="col" class="py-3 px-6">Due Date</th>
@@ -159,16 +158,41 @@ function getStatusClass($status) {
                                     data-description="<?php echo htmlspecialchars($row['description']); ?>"
                                     data-status="<?php echo htmlspecialchars($row['status']); ?>"
                                     data-upload-date="<?php echo htmlspecialchars($row['upload_date']); ?>"
-                                    data-due-date="<?php echo htmlspecialchars($row['due_date']); ?>">
+                                    data-due-date="<?php echo htmlspecialchars($row['due_date']); ?>"
+                                    data-current="<?php echo $row['current_recipient']; ?>"
+                                    data-total="<?php echo $row['total_recipients']; ?>">
                                     <td class="py-4 px-6">
-                                        <?php echo htmlspecialchars($row['recipient_name']); ?><br>
-                                        <span class="text-xs text-gray-500 dark:text-gray-400"><?php echo htmlspecialchars($row['recipient_email']); ?></span>
+                                        <div class="space-y-2">
+                                        <?php for ($i = 1; $i <= $row['total_recipients']; $i++): ?>
+                                            <?php if (!empty($row["recipient{$i}_name"])): ?>
+                                                <div class="<?php echo ($i == $row['current_recipient']) ? 'font-bold' : ''; ?>">
+                                                    <span class="font-medium">
+                                                        <?php echo "Recipient $i: "; ?>
+                                                        <?php if ($row['status'] === 'completed'): ?>
+                                                            <!-- If document is completed, show check mark for all recipients -->
+                                                            <i class="fas fa-check-circle text-green-500"></i>
+                                                        <?php elseif ($i < $row['current_recipient']): ?>
+                                                            <!-- For recipients who have already signed -->
+                                                            <i class="fas fa-check-circle text-green-500"></i>
+                                                        <?php elseif ($i == $row['current_recipient'] && $row['status'] !== 'completed'): ?>
+                                                            <!-- For current recipient if document isn't completed -->
+                                                            <i class="fas fa-clock text-yellow-500"></i>
+                                                        <?php endif; ?>
+                                                    </span>
+                                                    <?php echo htmlspecialchars($row["recipient{$i}_name"]); ?><br>
+                                                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                                                        <?php echo htmlspecialchars($row["recipient{$i}_email"]); ?>
+                                                    </span>
+                                                </div>
+                                            <?php endif; ?>
+                                        <?php endfor; ?>
+                                        </div>
                                     </td>
                                     <td class="py-4 px-6">
                                         <?php
-                                        if ($row['status'] === 'signed' || $row['status'] === 'completed') {
+                                        if ($row['status'] === 'completed' || $row['status'] === 'partially_signed') {
                                             $doc_link = $row['signed_file_path'];
-                                            $doc_name = "View Signed Document";
+                                            $doc_name = "View Latest Signed Version";
                                         } elseif (!empty($row['drive_link'])) {
                                             $doc_link = $row['drive_link'];
                                             $doc_name = "View on Google Drive";
@@ -177,21 +201,33 @@ function getStatusClass($status) {
                                             $doc_name = basename($row['file_path']);
                                         }
                                         ?>
-                                        <a href="<?php echo htmlspecialchars($doc_link); ?>" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline" onclick="event.stopPropagation();"><?php echo htmlspecialchars($doc_name); ?></a>
+                                        <a href="<?php echo htmlspecialchars($doc_link); ?>" 
+                                           target="_blank" 
+                                           class="text-blue-600 dark:text-blue-400 hover:underline" 
+                                           onclick="event.stopPropagation();">
+                                            <?php echo htmlspecialchars($doc_name); ?>
+                                        </a>
                                     </td>
                                     <td class="py-4 px-6"><?php echo htmlspecialchars($row['upload_date']); ?></td>
                                     <td class="py-4 px-6"><?php echo htmlspecialchars($row['due_date'] ?? 'N/A'); ?></td>
                                     <td class="py-4 px-6">
                                         <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo getStatusClass($row['status']); ?>">
-                                            <?php echo ucfirst(htmlspecialchars($row['status'])); ?>
+                                            <?php 
+                                            echo ucfirst(str_replace('_', ' ', $row['status']));
+                                            if ($row['status'] == 'partially_signed') {
+                                                echo " (" . ($row['current_recipient'] - 1) . "/{$row['total_recipients']})";
+                                            }
+                                            ?>
                                         </span>
                                     </td>
                                     <td class="py-4 px-6">
-                                        <?php if ($row['status'] === 'signed' || $row['status'] === 'completed'): ?>
+                                        <?php if ($row['status'] === 'completed' || $row['status'] === 'partially_signed'): ?>
                                             <form method="get" action="">
                                                 <input type="hidden" name="download_document" value="<?php echo $row['id']; ?>">
-                                                <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded" onclick="event.stopPropagation();">
-                                                    <?php echo $row['status'] === 'completed' ? 'Download Again' : 'Download'; ?>
+                                                <button type="submit" 
+                                                        class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded" 
+                                                        onclick="event.stopPropagation();">
+                                                    <?php echo $row['status'] === 'completed' ? 'Download Final' : 'Download Latest'; ?>
                                                 </button>
                                             </form>
                                         <?php endif; ?>
@@ -255,30 +291,47 @@ function getStatusClass($status) {
             const openModalRows = document.querySelectorAll('.open-modal');
             const closeModalButton = document.querySelector('.close-modal');
 
-            const statuses = ['sent', 'pending', 'signed', 'completed'];
+            const statuses = ['sent', 'pending', 'partially_signed', 'completed'];
             const statusColors = {
                 'sent': 'bg-blue-500',
                 'pending': 'bg-yellow-500',
-                'signed': 'bg-green-500',
-                'completed': 'bg-purple-500'
+                'partially_signed': 'bg-orange-500',
+                'completed': 'bg-green-500'
             };
 
             openModalRows.forEach(row => {
                 row.addEventListener('click', function(e) {
                     if (e.target.tagName.toLowerCase() === 'a' || e.target.tagName.toLowerCase() === 'button') return;
+                    
+                    const current = this.getAttribute('data-current');
+                    const total = this.getAttribute('data-total');
+                    const status = this.getAttribute('data-status');
+                    
                     const docDetails = {
                         requirements: this.getAttribute('data-requirements'),
-                        description: this.getAttribute('description'),
-                        status: this.getAttribute('data-status'),
+                        description: this.getAttribute('data-description'),
+                        status: status,
                         uploadDate: this.getAttribute('data-upload-date'),
-                        dueDate: this.getAttribute('data-due-date')
+                        dueDate: this.getAttribute('data-due-date'),
+                        current: current,
+                        total: total
                     };
+
                     modalContent.innerHTML = `
-                        <p class="dark:text-gray-300"><strong>Requirements:</strong> ${docDetails.requirements}</p>
-                        <p class="dark:text-gray-300"><strong>Description:</strong> ${docDetails.description}</p>
-                        <p class="dark:text-gray-300"><strong>Upload Date:</strong> ${docDetails.uploadDate}</p>
-                        <p class="dark:text-gray-300"><strong>Due Date:</strong> ${docDetails.dueDate || 'N/A'}</p>
-                    `;
+                        <div class="space-y-3">
+                            <p class="dark:text-gray-300"><strong>Requirements:</strong> ${docDetails.requirements}</p>
+                            <p class="dark:text-gray-300"><strong>Description:</strong> ${docDetails.description}</p>
+                            <p class="dark:text-gray-300"><strong>Upload Date:</strong> ${docDetails.uploadDate}</p>
+                            <p class="dark:text-gray-300"><strong>Due Date:</strong> ${docDetails.dueDate || 'N/A'}</p>
+                            <p class="dark:text-gray-300">
+                                <strong>Signing Progress:</strong> 
+                                ${status === 'completed' ? 'All recipients have signed' : 
+                                  status === 'partially_signed' ? `${current - 1} of ${total} recipients have signed` :
+                                  status === 'pending' ? `Awaiting signature from recipient ${current}` :
+                                  'Sent for signing'}
+                            </p>
+                        </div>`;
+                    
                     updateStatusFlow(docDetails.status);
                     modal.classList.remove('hidden');
                 });
@@ -288,20 +341,48 @@ function getStatusClass($status) {
                 modal.classList.add('hidden');
             });
 
+            // Close modal on click outside
+            window.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+
+            // Close modal on escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+                    modal.classList.add('hidden');
+                }
+            });
+
             function updateStatusFlow(currentStatus) {
                 statusFlow.innerHTML = '';
                 statuses.forEach((status, index) => {
                     const statusElement = document.createElement('div');
-                    statusElement.className = `w-auto px-2 py-1 rounded-full flex items-center justify-center text-white text-xs font-bold ${status === currentStatus ? statusColors[status] : 'bg-gray-300 dark:bg-gray-600'}`;
-                    statusElement.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+                    const isPassed = getStatusOrder(currentStatus) >= getStatusOrder(status);
+                    
+                    statusElement.className = `w-auto px-2 py-1 rounded-full flex items-center justify-center text-white text-xs font-bold ${
+                        isPassed ? statusColors[status] : 'bg-gray-300 dark:bg-gray-600'
+                    }`;
+                    
+                    statusElement.textContent = status.split('_').map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ');
+                    
                     statusFlow.appendChild(statusElement);
 
                     if (index < statuses.length - 1) {
                         const lineElement = document.createElement('div');
-                        lineElement.className = 'flex-grow h-1 bg-gray-300 dark:bg-gray-600';
+                        lineElement.className = `flex-grow h-1 ${
+                            isPassed ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'
+                        }`;
                         statusFlow.appendChild(lineElement);
                     }
                 });
+            }
+
+            function getStatusOrder(status) {
+                return statuses.indexOf(status);
             }
         });
     </script>
