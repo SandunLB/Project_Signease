@@ -31,7 +31,6 @@ function getUniqueFilename($target_dir, $filename) {
     $extension = pathinfo($filename, PATHINFO_EXTENSION);
     $counter = 1;
     
-    // Keep checking until we find a unique filename
     while (file_exists($target_dir . $filename)) {
         $filename = $original_name . " ({$counter})." . $extension;
         $counter++;
@@ -42,17 +41,31 @@ function getUniqueFilename($target_dir, $filename) {
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $sender_id = $_SESSION['user_id'];
-    $recipient_id = $_POST['recipient'];
-    $drive_link = $_POST['drive_link'];
+    $recipient_1 = $_POST['recipient_1'];
+    $recipient_2 = !empty($_POST['recipient_2']) ? $_POST['recipient_2'] : null;
+    $recipient_3 = !empty($_POST['recipient_3']) ? $_POST['recipient_3'] : null;
+    $total_recipients = (int)$_POST['num_recipients'];
+    $drive_link = $_POST['drive_link'] ?? '';
     $requirements = isset($_POST['requirements']) ? implode(", ", $_POST['requirements']) : "";
     $description = $_POST['description'];
-    $status = 'sent'; // Initial status when document is uploaded
     
     // Add this line to get the due date
     $due_date = !empty($_POST['due_date']) ? $_POST['due_date'] : date('Y-m-d', strtotime('+1 week'));
 
     $target_dir = "uploads/";
     $uploadOk = 1;
+
+    // Create uploads directory if it doesn't exist
+    if (!file_exists($target_dir)) {
+        mkdir($target_dir, 0777, true);
+    }
+
+    // Validate recipient selection
+    if (($total_recipients > 1 && empty($_POST['recipient_2'])) || 
+        ($total_recipients > 2 && empty($_POST['recipient_3']))) {
+        $upload_message = "Error: Please select all required recipients.";
+        $uploadOk = 0;
+    }
 
     // Handle file upload
     if (isset($_FILES["document"]) && $_FILES["document"]["error"] == 0) {
@@ -61,7 +74,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $target_file = $target_dir . $filename;
         $fileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
 
-        // Check file size
+        // Check file size (5MB max)
         if ($_FILES["document"]["size"] > 5000000) {
             $upload_message = "Error: Your file is too large (max 5MB).";
             $uploadOk = 0;
@@ -125,32 +138,58 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 
     if ($uploadOk == 1) {
-        // Get sender's name for the email
-        $sender_sql = "SELECT name FROM users WHERE id = ?";
-        $sender_stmt = $conn->prepare($sender_sql);
-        $sender_stmt->bind_param("i", $sender_id);
-        $sender_stmt->execute();
-        $sender_result = $sender_stmt->get_result();
-        $sender_data = $sender_result->fetch_assoc();
-        $sender_name = $sender_data['name'];
+        try {
+            // Start transaction
+            $conn->begin_transaction();
 
-        // Update the SQL query to include the due_date column
-        $sql = "INSERT INTO documents (sender_id, recipient_id, file_path, drive_link, requirements, description, status, due_date) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param("iissssss", $sender_id, $recipient_id, $target_file, $drive_link, $requirements, $description, $status, $due_date);
+            // Insert document with all recipients
+            $sql = "INSERT INTO documents (
+                sender_id, recipient_id, recipient_id_2, recipient_id_3, 
+                file_path, drive_link, requirements, description, 
+                status, due_date, current_recipient, total_recipients
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'sent', ?, 1, ?)";
+            
+            $stmt = $conn->prepare($sql);
+            
+            $stmt->bind_param(
+                "iiiisssssi", 
+                $sender_id,         // sender_id
+                $recipient_1,       // recipient_id
+                $recipient_2,       // recipient_id_2
+                $recipient_3,       // recipient_id_3
+                $target_file,       // file_path
+                $drive_link,        // drive_link
+                $requirements,      // requirements
+                $description,       // description
+                $due_date,          // due_date
+                $total_recipients   // total_recipients
+            );
+            
+            if (!$stmt->execute()) {
+                throw new Exception("Failed to save document to database: " . $stmt->error);
+            }
 
-        if ($stmt->execute()) {
+            $document_id = $stmt->insert_id;
+
+            // Get sender's name
+            $sender_sql = "SELECT name FROM users WHERE id = ?";
+            $sender_stmt = $conn->prepare($sender_sql);
+            $sender_stmt->bind_param("i", $sender_id);
+            $sender_stmt->execute();
+            $sender_result = $sender_stmt->get_result();
+            $sender_data = $sender_result->fetch_assoc();
+            $sender_name = $sender_data['name'];
+
+            // Get first recipient's details
+            $recipient_sql = "SELECT name, email FROM users WHERE id = ?";
+            $recipient_stmt = $conn->prepare($recipient_sql);
+            $recipient_stmt->bind_param("i", $recipient_1);
+            $recipient_stmt->execute();
+            $recipient_result = $recipient_stmt->get_result();
+            $recipient_data = $recipient_result->fetch_assoc();
+
+            // Send email notification
             try {
-                // Get recipient's email
-                $recipient_sql = "SELECT name, email FROM users WHERE id = ?";
-                $recipient_stmt = $conn->prepare($recipient_sql);
-                $recipient_stmt->bind_param("i", $recipient_id);
-                $recipient_stmt->execute();
-                $recipient_result = $recipient_stmt->get_result();
-                $recipient_data = $recipient_result->fetch_assoc();
-
-                // Send email notification
                 $mail = configureMailer();
                 $mail->addAddress($recipient_data['email'], $recipient_data['name']);
                 $mail->Subject = 'New Document for Signing - SignEase';
@@ -169,6 +208,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                                 <li style='margin-bottom: 8px;'><strong>Requirements:</strong> {$requirements}</li>
                                 <li style='margin-bottom: 8px;'><strong>Due Date:</strong> {$due_date}</li>
                                 <li style='margin-bottom: 8px;'><strong>Description:</strong> {$description}</li>
+                                <li style='margin-bottom: 8px;'><strong>Your Position:</strong> Recipient 1 of {$total_recipients}</li>
                             </ul>
                         </div>
 
@@ -186,15 +226,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </div>";
 
                 $mail->send();
-                $upload_message = "Success: The file has been uploaded and recipient has been notified by email.";
+                $conn->commit();
+                $upload_message = "Success: Document uploaded and sent to first recipient.";
             } catch (Exception $e) {
                 error_log("Email sending failed: {$mail->ErrorInfo}");
-                $upload_message = "Success: The file has been uploaded, but email notification failed.";
+                $conn->commit();
+                $upload_message = "Success: Document uploaded, but email notification failed.";
             }
-        } else {
-            $upload_message = "Error: There was an error saving to the database.";
+        } catch (Exception $e) {
+            $conn->rollback();
+            $upload_message = "Error: " . $e->getMessage();
+            $uploadOk = 0;
         }
-        $stmt->close();
     }
 }
 
@@ -219,7 +262,7 @@ $stmt->close();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document Upload - SignEase</title>
+    <title>Send to eSign - SignEase</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * {
@@ -232,7 +275,8 @@ $stmt->close();
             theme: {
                 extend: {
                     colors: {
-                        // Add any custom colors here
+                        primary: '#8B0000',
+                        secondary: '#FFA500',
                     }
                 }
             }
@@ -247,15 +291,8 @@ $stmt->close();
 <body class="bg-gray-100 dark:bg-gray-900" x-data="{ uploadMethod: 'local', isLoading: false, message: '<?php echo addslashes($upload_message); ?>' }">
     <div class="p-4 sm:ml-64">
         <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700">
-        <div class="flex justify-between items-center mb-6">
-                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Document Upload</h1>
-                <a href="doc_creator/index.html" 
-                target="_blank"
-                rel="noopener noreferrer"
-                class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md">
-                    <i class="fas fa-plus mr-2"></i>
-                    Create New Document
-                </a>
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Send to eSign</h1>
             </div>
             
             <div x-show="message" x-cloak
@@ -293,10 +330,39 @@ $stmt->close();
                 </div>
 
                 <div>
-                    <label for="recipient" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Select Recipient</label>
-                    <select id="recipient" name="recipient" required
+                    <label for="num_recipients" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Number of Recipients</label>
+                    <select id="num_recipients" name="num_recipients" 
+                            class="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-white"
+                            onchange="toggleRecipientFields()">
+                        <option value="1">1 Recipient</option>
+                        <option value="2">2 Recipients</option>
+                        <option value="3">3 Recipients</option>
+                    </select>
+                </div>
+
+                <div id="recipient_1_div" class="mt-4">
+                    <label for="recipient_1" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">First Recipient</label>
+                    <select id="recipient_1" name="recipient_1" required
                             class="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-white">
-                        <option value="">Choose a recipient</option>
+                        <option value="">Choose first recipient</option>
+                        <?php echo $recipient_options; ?>
+                    </select>
+                </div>
+
+                <div id="recipient_2_div" class="mt-4" style="display: none;">
+                    <label for="recipient_2" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Second Recipient</label>
+                    <select id="recipient_2" name="recipient_2"
+                            class="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-white">
+                        <option value="">Choose second recipient</option>
+                        <?php echo $recipient_options; ?>
+                    </select>
+                </div>
+
+                <div id="recipient_3_div" class="mt-4" style="display: none;">
+                    <label for="recipient_3" class="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">Third Recipient</label>
+                    <select id="recipient_3" name="recipient_3"
+                            class="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm text-gray-900 dark:text-white">
+                        <option value="">Choose third recipient</option>
                         <?php echo $recipient_options; ?>
                     </select>
                 </div>
@@ -358,12 +424,40 @@ $stmt->close();
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span x-text="isLoading ? 'Uploading...' : 'Upload Document'"></span>
+                        <span x-text="isLoading ? 'Uploading...' : 'Upload and Send Document'"></span>
                     </button>
                 </div>
             </form>
         </div>
     </div>
+
+    <script>
+    function toggleRecipientFields() {
+        const numRecipients = document.getElementById('num_recipients').value;
+        const recipient2Div = document.getElementById('recipient_2_div');
+        const recipient3Div = document.getElementById('recipient_3_div');
+        const recipient2Select = document.getElementById('recipient_2');
+        const recipient3Select = document.getElementById('recipient_3');
+        
+        if (numRecipients >= 2) {
+            recipient2Div.style.display = 'block';
+            recipient2Select.required = true;
+        } else {
+            recipient2Div.style.display = 'none';
+            recipient2Select.required = false;
+            recipient2Select.value = '';
+        }
+        
+        if (numRecipients >= 3) {
+            recipient3Div.style.display = 'block';
+            recipient3Select.required = true;
+        } else {
+            recipient3Div.style.display = 'none';
+            recipient3Select.required = false;
+            recipient3Select.value = '';
+        }
+    }
+    </script>
     <script src="theme.js"></script>
 </body>
 </html>
