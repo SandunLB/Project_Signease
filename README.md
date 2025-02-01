@@ -6,7 +6,7 @@
 
 **PROJECT_SIGNEASE** is a web application designed to streamline document sharing and management for digital signatures. Simplify your signing process with a secure, intuitive platform.
 
-![SignEase Demo](https://via.placeholder.com/800x400.png?text=SignEase+Interface+Demo) *<!-- Replace with actual screenshot -->*
+![SignEase Demo](https://via.placeholder.com/800x400.png?text=SignEase+Interface+Demo)
 
 ---
 
@@ -61,9 +61,9 @@
 
 2. **Set up the database**
    \`\`\`
-   CREATE DATABASE signease_db;
-   USE signease_db;
-   -- Import SQL file from database/schema.sql
+   CREATE DATABASE Project_signease;
+   USE Project_signease;
+   -- Import SQL file from database/Project_signease.sql
    \`\`\`
 
 3. **Configure environment variables**
@@ -161,7 +161,7 @@ Distributed under the MIT License. See \`LICENSE\` file for more information.
 ## 📧 Contact
 
 **Project Maintainer**  
-[Your Name] - [youremail@example.com](mailto:youremail@example.com)  
-GitHub: [@yourusername](https://github.com/yourusername)
+[Your Name] - [sandunlb2001@gmail.com](mailto:sandunlb2001@gmail.com)  
+GitHub: [@yourusername](https://github.com/SandunLB)
 
-Project Link: [https://github.com/yourusername/PROJECT_SIGNEASE](https://github.com/yourusername/PROJECT_SIGNEASE)
+Project Link: [https://github.com/yourusername/PROJECT_SIGNEASE](https://github.com/SandunLB/Project_Signease)
