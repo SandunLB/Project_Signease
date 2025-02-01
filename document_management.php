@@ -11,10 +11,16 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 // Fetch documents
 function fetchDocuments($status = null, $search = '') {
     global $conn;
-    $sql = "SELECT d.*, sender.name AS sender_name, recipient.name AS recipient_name 
+    $sql = "SELECT d.*, 
+                   sender.name AS sender_name,
+                   r1.name AS recipient1_name, r1.email AS recipient1_email,
+                   r2.name AS recipient2_name, r2.email AS recipient2_email,
+                   r3.name AS recipient3_name, r3.email AS recipient3_email
             FROM documents d
             JOIN users sender ON d.sender_id = sender.id
-            JOIN users recipient ON d.recipient_id = recipient.id
+            JOIN users r1 ON d.recipient_id = r1.id
+            LEFT JOIN users r2 ON d.recipient_id_2 = r2.id
+            LEFT JOIN users r3 ON d.recipient_id_3 = r3.id
             WHERE 1=1";
     
     $params = [];
@@ -27,12 +33,14 @@ function fetchDocuments($status = null, $search = '') {
     }
 
     if ($search) {
-        $sql .= " AND (sender.name LIKE ? OR recipient.name LIKE ? OR d.description LIKE ?)";
+        $sql .= " AND (sender.name LIKE ? OR 
+                      r1.name LIKE ? OR r1.email LIKE ? OR
+                      r2.name LIKE ? OR r2.email LIKE ? OR
+                      r3.name LIKE ? OR r3.email LIKE ? OR
+                      d.description LIKE ?)";
         $searchParam = "%$search%";
-        $params[] = $searchParam;
-        $params[] = $searchParam;
-        $params[] = $searchParam;
-        $types .= 'sss';
+        $params = array_merge($params, array_fill(0, 8, $searchParam));
+        $types .= str_repeat('s', 8);
     }
 
     $sql .= " ORDER BY d.upload_date DESC";
@@ -52,7 +60,7 @@ $currentTab = isset($_GET['tab']) ? $_GET['tab'] : 'all';
 $allDocuments = fetchDocuments(null, $search);
 $sentDocuments = fetchDocuments('sent', $search);
 $pendingDocuments = fetchDocuments('pending', $search);
-$signedDocuments = fetchDocuments('signed', $search);
+$partiallySignedDocuments = fetchDocuments('partially_signed', $search);
 $completedDocuments = fetchDocuments('completed', $search);
 ?>
 
@@ -136,7 +144,7 @@ $completedDocuments = fetchDocuments('completed', $search);
                         <a href="?tab=pending<?php echo $search ? '&search=' . urlencode($search) : ''; ?>" class="inline-block p-4 <?php echo $currentTab === 'pending' ? 'text-blue-600 bg-gray-100 active dark:bg-gray-800 dark:text-blue-500' : 'hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'; ?>">Pending</a>
                     </li>
                     <li class="mr-2">
-                        <a href="?tab=signed<?php echo $search ? '&search=' . urlencode($search) : ''; ?>" class="inline-block p-4 <?php echo $currentTab === 'signed' ? 'text-blue-600 bg-gray-100 active dark:bg-gray-800 dark:text-blue-500' : 'hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'; ?>">Signed</a>
+                        <a href="?tab=partially_signed<?php echo $search ? '&search=' . urlencode($search) : ''; ?>" class="inline-block p-4 <?php echo $currentTab === 'partially_signed' ? 'text-blue-600 bg-gray-100 active dark:bg-gray-800 dark:text-blue-500' : 'hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'; ?>">Partially Signed</a>
                     </li>
                     <li class="mr-2">
                         <a href="?tab=completed<?php echo $search ? '&search=' . urlencode($search) : ''; ?>" class="inline-block p-4 <?php echo $currentTab === 'completed' ? 'text-blue-600 bg-gray-100 active dark:bg-gray-800 dark:text-blue-500' : 'hover:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 dark:hover:text-gray-300'; ?>">Completed</a>
@@ -164,11 +172,11 @@ $completedDocuments = fetchDocuments('completed', $search);
                         <tr>
                             <th scope="col" class="py-3 px-6">ID</th>
                             <th scope="col" class="py-3 px-6">Sender</th>
-                            <th scope="col" class="py-3 px-6">Recipient</th>
+                            <th scope="col" class="py-3 px-6">Recipients</th>
                             <th scope="col" class="py-3 px-6">Upload Date</th>
+                            <th scope="col" class="py-3 px-6">Due Date</th>
                             <th scope="col" class="py-3 px-6">Status</th>
-                            <th scope="col" class="py-3 px-6">Original Document</th>
-                            <th scope="col" class="py-3 px-6">Signed Document</th>
+                            <th scope="col" class="py-3 px-6">Document</th>
                             <th scope="col" class="py-3 px-6">Actions</th>
                         </tr>
                     </thead>
@@ -182,8 +190,8 @@ $completedDocuments = fetchDocuments('completed', $search);
                             case 'pending':
                                 $documents = $pendingDocuments;
                                 break;
-                            case 'signed':
-                                $documents = $signedDocuments;
+                            case 'partially_signed':
+                                $documents = $partiallySignedDocuments;
                                 break;
                             case 'completed':
                                 $documents = $completedDocuments;
@@ -202,8 +210,33 @@ $completedDocuments = fetchDocuments('completed', $search);
                         <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
                             <td class="py-4 px-6"><?php echo htmlspecialchars($document['id']); ?></td>
                             <td class="py-4 px-6"><?php echo htmlspecialchars($document['sender_name']); ?></td>
-                            <td class="py-4 px-6"><?php echo htmlspecialchars($document['recipient_name']); ?></td>
+                            <td class="py-4 px-6">
+                                <div class="space-y-2">
+                                    <?php for ($i = 1; $i <= $document['total_recipients']; $i++): ?>
+                                        <?php if (!empty($document["recipient{$i}_name"])): ?>
+                                            <div class="<?php echo ($i == $document['current_recipient']) ? 'font-bold' : ''; ?>">
+                                                <span class="font-medium">
+                                                    <?php echo "Recipient $i: "; ?>
+                                                    <?php if ($document['status'] === 'completed'): ?>
+                                                        <i class="fas fa-check-circle text-green-500"></i>
+                                                    <?php elseif ($i < $document['current_recipient']): ?>
+                                                        <i class="fas fa-check-circle text-green-500"></i>
+                                                    <?php elseif ($i == $document['current_recipient'] && $document['status'] !== 'completed'): ?>
+                                                        <i class="fas fa-clock text-yellow-500"></i>
+                                                    <?php endif; ?>
+                                                </span>
+                                                <?php echo htmlspecialchars($document["recipient{$i}_name"]); ?>
+                                                <br>
+                                                <span class="text-xs text-gray-500 dark:text-gray-400">
+                                                    <?php echo htmlspecialchars($document["recipient{$i}_email"]); ?>
+                                                </span>
+                                            </div>
+                                        <?php endif; ?>
+                                    <?php endfor; ?>
+                                </div>
+                            </td>
                             <td class="py-4 px-6"><?php echo htmlspecialchars($document['upload_date']); ?></td>
+                            <td class="py-4 px-6"><?php echo htmlspecialchars($document['due_date'] ?? 'N/A'); ?></td>
                             <td class="py-4 px-6">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                     <?php
@@ -214,35 +247,44 @@ $completedDocuments = fetchDocuments('completed', $search);
                                         case 'pending':
                                             echo 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
                                             break;
-                                        case 'signed':
-                                            echo 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+                                        case 'partially_signed':
+                                            echo 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
                                             break;
                                         case 'completed':
-                                            echo 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
+                                            echo 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
                                             break;
                                         default:
                                             echo 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
                                     }
                                     ?>">
-                                    <?php echo ucfirst(htmlspecialchars($document['status'])); ?>
+                                    <?php 
+                                    echo ucfirst(str_replace('_', ' ', $document['status']));
+                                    if ($document['status'] == 'partially_signed') {
+                                        echo " (" . ($document['current_recipient'] - 1) . "/{$document['total_recipients']})";
+                                    }
+                                    ?>
                                 </span>
                             </td>
                             <td class="py-4 px-6">
-                                <?php if ($document['file_path']): ?>
-                                    <a href="<?php echo htmlspecialchars($document['file_path']); ?>" target="_blank" class="text-blue-600 dark:text-blue-500 hover:underline">View</a>
-                                <?php else: ?>
-                                    N/A
-                                <?php endif; ?>
+                                <?php
+                                if ($document['status'] === 'completed' || $document['status'] === 'partially_signed') {
+                                    $doc_link = $document['signed_file_path'];
+                                    $doc_name = "View Latest Signed Version";
+                                } else {
+                                    $doc_link = $document['file_path'];
+                                    $doc_name = "View Original";
+                                }
+                                ?>
+                                <a href="<?php echo htmlspecialchars($doc_link); ?>" 
+                                   target="_blank" 
+                                   class="text-blue-600 dark:text-blue-500 hover:underline">
+                                    <?php echo $doc_name; ?>
+                                </a>
                             </td>
                             <td class="py-4 px-6">
-                                <?php if ($document['signed_file_path']): ?>
-                                    <a href="<?php echo htmlspecialchars($document['signed_file_path']); ?>" target="_blank" class="text-blue-600 dark:text-blue-500 hover:underline">View</a>
-                                <?php else: ?>
-                                    N/A
-                                <?php endif; ?>
-                            </td>
-                            <td class="py-4 px-6">
-                                <button data-action="view-details" data-document='<?php echo htmlspecialchars(json_encode($document), ENT_QUOTES, 'UTF-8'); ?>' class="text-blue-600 dark:text-blue-500 hover:underline">
+                                <button data-action="view-details" 
+                                        data-document='<?php echo htmlspecialchars(json_encode($document), ENT_QUOTES, 'UTF-8'); ?>' 
+                                        class="text-blue-600 dark:text-blue-500 hover:underline">
                                     View Details
                                 </button>
                             </td>
@@ -258,24 +300,22 @@ $completedDocuments = fetchDocuments('completed', $search);
     <!-- Document Details Modal -->
     <div id="documentModal" class="fixed z-10 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity dark:bg-gray-900 dark:bg-opacity-75" aria-hidden="true"></div>
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full dark:bg-gray-800">
                 <div class="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                     <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
                         Document Details
                     </h3>
-                    <div class="mt-2">
+                    <div class="mt-4 space-y-3" id="modal-content">
                         <p id="documentId" class="text-sm text-gray-500 dark:text-gray-400"></p>
                         <p id="documentSender" class="text-sm text-gray-500 dark:text-gray-400"></p>
-                        <p id="documentRecipient" class="text-sm text-gray-500 dark:text-gray-400"></p>
+                        <div id="documentRecipients" class="text-sm text-gray-500 dark:text-gray-400"></div>
                         <p id="documentUploadDate" class="text-sm text-gray-500 dark:text-gray-400"></p>
+                        <p id="documentDueDate" class="text-sm text-gray-500 dark:text-gray-400"></p>
                         <p id="documentStatus" class="text-sm text-gray-500 dark:text-gray-400"></p>
                         <p id="documentRequirements" class="text-sm text-gray-500 dark:text-gray-400"></p>
                         <p id="documentDescription" class="text-sm text-gray-500 dark:text-gray-400"></p>
-                        <p id="documentFilePath" class="text-sm text-gray-500 dark:text-gray-400"></p>
-                        <p id="documentSignedFilePath" class="text-sm text-gray-500 dark:text-gray-400"></p>
-                        <p id="documentDriveLink" class="text-sm text-gray-500 dark:text-gray-400"></p>
                     </div>
                 </div>
                 <div class="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
@@ -288,21 +328,41 @@ $completedDocuments = fetchDocuments('completed', $search);
     </div>
 
     <script>
-        function showTab(tabId) {
-            // This function is no longer needed as we're using server-side tab switching
-        }
-
         function openDocumentModal(docData) {
-            document.getElementById('documentId').textContent = `ID: ${docData.id}`;
+            document.getElementById('documentId').textContent = `Document ID: ${docData.id}`;
             document.getElementById('documentSender').textContent = `Sender: ${docData.sender_name}`;
-            document.getElementById('documentRecipient').textContent = `Recipient: ${docData.recipient_name}`;
+            
+            // Display recipients
+            let recipientsHtml = '<strong>Recipients:</strong><br>';
+            for (let i = 1; i <= docData.total_recipients; i++) {
+                const recipientName = docData[`recipient${i}_name`];
+                const recipientEmail = docData[`recipient${i}_email`];
+                if (recipientName) {
+                    let status = '';
+                    if (docData.status === 'completed') {
+                        status = '<i class="fas fa-check-circle text-green-500"></i>';
+                    } else if (i < docData.current_recipient) {
+                        status = '<i class="fas fa-check-circle text-green-500"></i>';
+                    } else if (i === docData.current_recipient) {
+                        status = '<i class="fas fa-clock text-yellow-500"></i>';
+                    }
+                    recipientsHtml += `Recipient ${i}: ${status} ${recipientName} (${recipientEmail})<br>`;
+                }
+            }
+            document.getElementById('documentRecipients').innerHTML = recipientsHtml;
+            
             document.getElementById('documentUploadDate').textContent = `Upload Date: ${docData.upload_date}`;
-            document.getElementById('documentStatus').textContent = `Status: ${docData.status}`;
-            document.getElementById('documentRequirements').textContent = `Requirements: ${docData.requirements}`;
+            document.getElementById('documentDueDate').textContent = `Due Date: ${docData.due_date || 'N/A'}`;
+            
+            let statusText = docData.status.replace(/_/g, ' ');
+            if (docData.status === 'partially_signed') {
+                statusText += ` (${docData.current_recipient - 1}/${docData.total_recipients})`;
+            }
+            document.getElementById('documentStatus').textContent = `Status: ${statusText}`;
+            
+            document.getElementById('documentRequirements').textContent = `Requirements: ${docData.requirements || 'N/A'}`;
             document.getElementById('documentDescription').textContent = `Description: ${docData.description || 'N/A'}`;
-            document.getElementById('documentFilePath').textContent = `File Path: ${docData.file_path}`;
-            document.getElementById('documentSignedFilePath').textContent = `Signed File Path: ${docData.signed_file_path || 'N/A'}`;
-            document.getElementById('documentDriveLink').textContent = `Drive Link: ${docData.drive_link || 'N/A'}`;
+            
             document.getElementById('documentModal').classList.remove('hidden');
         }
 
@@ -310,7 +370,7 @@ $completedDocuments = fetchDocuments('completed', $search);
             document.getElementById('documentModal').classList.add('hidden');
         }
 
-        // Add event listeners after the DOM is fully loaded
+        // Add event listeners
         document.addEventListener('DOMContentLoaded', function() {
             const viewDetailsButtons = document.querySelectorAll('[data-action="view-details"]');
             viewDetailsButtons.forEach(button => {
@@ -318,6 +378,20 @@ $completedDocuments = fetchDocuments('completed', $search);
                     const docData = JSON.parse(this.getAttribute('data-document'));
                     openDocumentModal(docData);
                 });
+            });
+
+            // Close modal on outside click
+            document.getElementById('documentModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    closeDocumentModal();
+                }
+            });
+
+            // Close modal on escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeDocumentModal();
+                }
             });
         });
     </script>
