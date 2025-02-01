@@ -54,79 +54,73 @@
 ## 📥 Installation
 
 1. **Clone the repository**
-   \`\`\`
-   git clone https://github.com/SandunLB/Project_Signease.git
-   cd PROJECT_SIGNEASE
-   \`\`\`
+  ```bash
+  git clone https://github.com/SandunLB/Project_Signease.git
+  cd PROJECT_SIGNEASE
+  ```
 
 2. **Set up the database**
-   \`\`\`
-   CREATE DATABASE Project_signease;
-   USE Project_signease;
-   -- Import SQL file from database/Project_signease.sql
-   \`\`\`
+  ```sql
+  CREATE DATABASE Project_signease;
+  USE Project_signease;
+  -- Import SQL file from database/Project_signease.sql
+  ```
 
-3. **Configure environment variables**
-   \`\`\`
-   cp .env.example .env
-   \`\`\`
-   Update \`.env\` with your database credentials:
-   \`\`\`
-   DB_HOST=localhost
-   DB_NAME=signease_db
-   DB_USER=root
-   DB_PASS=your_password
-   \`\`\`
+3. **Configure settings**
+  Update `config.php` with your database credentials:
+  ```php
+  DB_HOST=localhost
+  DB_NAME=signease_db
+  DB_USER=root
+  DB_PASS=your_password
+  ```
 
 4. **Start the PHP server**
-   \`\`\`
-   php -S localhost:8000
-   \`\`\`
-
----
+  ```bash
+  php -S localhost:8000
+  ```
 
 ## 🖥️ Usage
 
-1. **Access the application**  
-   Visit \`http://localhost:8000\` in your browser.
+1. **Access the application**
+   - If using XAMPP: Visit `http://localhost/Project_Signease` in your browser
+   - If using PHP built-in server: Visit `http://localhost:8000` in your browser
 
-2. **Upload Documents**  
+2. **Upload Documents**
    - Navigate to **Dashboard**
    - Click **Upload New Document**
    - Select PDF/document and add signer emails
 
-3. **Track Signatures**  
+3. **Track Signatures**
    - Monitor signing progress in real-time
    - Receive notifications when documents are signed
 
-4. **Download Signed Documents**  
+4. **Download Signed Documents**
    - Completed documents are automatically archived
    - Available in both PDF and audit log formats
 
----
+# 🔧Configuration
 
-## 🔧 Configuration
+## Email Setup
+Configure SMTP in `config/mail.php` for email notifications:
 
-**Email Setup**  
-Configure SMTP in \`config/mail.php\` for email notifications:
-\`\`\`
+```php
 define('SMTP_HOST', 'smtp.example.com');
 define('SMTP_PORT', 587);
 define('SMTP_USER', 'user@example.com');
 define('SMTP_PASS', 'password');
-\`\`\`
+```
 
-**Security Settings**  
-Update \`config/security.php\` for enhanced protection:
-\`\`\`
+## Security Settings
+Update `config/security.php` for enhanced protection:
+
+```php
 // Enable HTTPS redirection
 define('FORCE_HTTPS', true);
 
 // Session encryption
 define('SESSION_ENCRYPTION_KEY', 'your-secure-key-here');
-\`\`\`
-
----
+```
 
 ## 🤝 Contributing
 
@@ -162,6 +156,6 @@ Distributed under the MIT License. See \`LICENSE\` file for more information.
 
 **Project Maintainer**  
 [Your Name] - [sandunlb2001@gmail.com](mailto:sandunlb2001@gmail.com)  
-GitHub: [@yourusername](https://github.com/SandunLB)
+GitHub: [@SandunLB](https://github.com/SandunLB)
 
-Project Link: [https://github.com/yourusername/PROJECT_SIGNEASE](https://github.com/SandunLB/Project_Signease)
+Project Link: [https://github.com/SandunLB/Project_Signease](https://github.com/SandunLB/Project_Signease)
