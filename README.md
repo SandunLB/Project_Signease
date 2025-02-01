@@ -55,7 +55,7 @@
 
 1. **Clone the repository**
    \`\`\`
-   git clone https://github.com/yourusername/PROJECT_SIGNEASE.git
+   git clone https://github.com/SandunLB/Project_Signease.git
    cd PROJECT_SIGNEASE
    \`\`\`
 
