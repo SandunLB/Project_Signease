@@ -23,12 +23,17 @@ $keyword = isset($_POST['keyword']) ? sanitize_input($_POST['keyword']) : '';
 $status = isset($_POST['status']) ? sanitize_input($_POST['status']) : '';
 $selected_docs = isset($_POST['selected_docs']) ? $_POST['selected_docs'] : [];
 
-// Base query
-$query = "SELECT d.id, d.file_path, d.upload_date, d.signed_at, d.status, 
-                 sender.name AS sender_name, recipient.name AS recipient_name 
+// Base query with multiple recipients
+$query = "SELECT d.*, 
+                 sender.name AS sender_name,
+                 r1.name AS recipient1_name, r1.email AS recipient1_email,
+                 r2.name AS recipient2_name, r2.email AS recipient2_email,
+                 r3.name AS recipient3_name, r3.email AS recipient3_email
           FROM documents d
           JOIN users sender ON d.sender_id = sender.id
-          JOIN users recipient ON d.recipient_id = recipient.id
+          JOIN users r1 ON d.recipient_id = r1.id
+          LEFT JOIN users r2 ON d.recipient_id_2 = r2.id
+          LEFT JOIN users r3 ON d.recipient_id_3 = r3.id
           WHERE 1=1";
 
 $params = [];
@@ -44,12 +49,14 @@ if ($start_date && $end_date) {
 
 // Add keyword filter
 if ($keyword) {
-    $query .= " AND (d.file_path LIKE ? OR sender.name LIKE ? OR recipient.name LIKE ?)";
+    $query .= " AND (d.file_path LIKE ? OR 
+                    sender.name LIKE ? OR 
+                    r1.name LIKE ? OR r1.email LIKE ? OR
+                    r2.name LIKE ? OR r2.email LIKE ? OR
+                    r3.name LIKE ? OR r3.email LIKE ?)";
     $keyword_param = "%$keyword%";
-    $params[] = $keyword_param;
-    $params[] = $keyword_param;
-    $params[] = $keyword_param;
-    $types .= "sss";
+    $params = array_merge($params, array_fill(0, 8, $keyword_param));
+    $types .= str_repeat('s', 8);
 }
 
 // Add status filter
@@ -72,111 +79,165 @@ $documents = $result->fetch_all(MYSQLI_ASSOC);
 
 // Handle PDF generation and download
 if (isset($_POST['generate_pdf'])) {
-    // Clean (erase) the output buffer and turn off output buffering
     ob_end_clean();
-
     require_once('fpdf/fpdf.php');
 
     class PDF extends FPDF {
         function Header() {
-            $this->Image('./imgs/logo3.png', 10, 8, 15); 
-            // Set font: Arial bold 15
+            // Arial bold 15
             $this->SetFont('Arial', 'B', 15);
-            // Move to the right for text alignment
-            $this->Cell(25); 
-            // Add title, centered
-            $this->Cell(130, 10, 'SignEase Document Report', 0, 0, 'C'); 
+            // Title
+            $this->Cell(220, 10, 'SignEase Document Report', 0, 0, 'C');
+            // Date
+            $this->SetFont('Arial', '', 10);
+            $this->Cell(0, 10, 'Generated: ' . date('Y-m-d H:i'), 0, 1, 'R');
             // Line break
-            $this->Ln(20);
+            $this->Ln(10);
         }
-        
 
         function Footer() {
-            // Position at 1.5 cm from bottom
             $this->SetY(-15);
-            // Arial italic 8
             $this->SetFont('Arial', 'I', 8);
-            // Page number
             $this->Cell(0, 10, 'Page ' . $this->PageNo() . '/{nb}', 0, 0, 'C');
         }
 
-        function ChapterTitle($num, $label) {
-            // Arial 12
-            $this->SetFont('Arial', '', 12);
-            // Background color
-            $this->SetFillColor(200, 220, 255);
-            // Title
-            $this->Cell(0, 6, "Chapter $num : $label", 0, 1, 'L', true);
-            // Line break
-            $this->Ln(4);
+        function MultiLineCell($w, $h, $txt, $border=0, $align='L', $fill=false) {
+            $lines = explode("\n", $txt);
+            $py = $this->GetY();
+            $px = $this->GetX();
+            $height = count($lines) * $h;
+
+            $this->Rect($px, $py, $w, $height, $fill ? 'DF' : 'D');
+
+            foreach($lines as $line) {
+                $this->SetXY($px, $this->GetY());
+                $this->Cell($w, $h, $line, 0, 2, $align);
+            }
+
+            $this->SetXY($px + $w, $py);
+            
+            return $height;
         }
 
-        function ChapterBody($file) {
-            // Read text file
-            $txt = file_get_contents($file);
-            // Times 12
-            $this->SetFont('Times', '', 12);
-            // Output justified text
-            $this->MultiCell(0, 5, $txt);
-            // Line break
-            $this->Ln();
+        function CheckPageBreak($h) {
+            $pageHeight = $this->h - $this->tMargin - $this->bMargin;
+            $currentY = $this->GetY();
+
+            if ($currentY + $h > $pageHeight) {
+                $this->AddPage($this->CurOrientation);
+                return true;
+            }
+            return false;
         }
     }
 
-    $pdf = new PDF();
+    // Create PDF document
+    $pdf = new PDF('L');
     $pdf->AliasNbPages();
     $pdf->AddPage();
-    $pdf->SetFont('Arial', '', 10);
+    $pdf->SetMargins(10, 10, 10);
+    $pdf->SetAutoPageBreak(true, 15);
+    $pdf->SetFont('Arial', '', 9);
 
-    // Add report details
-    $pdf->SetFillColor(255, 255, 255);
-    $pdf->SetTextColor(0, 0, 0);
-    $pdf->Cell(0, 10, 'Generated on: ' . date('Y-m-d H:i:s'), 0, 1, 'R', true);
-    
+    // Define column widths
+    $colWidths = array(
+        'id' => 15,
+        'document' => 45,
+        'sender' => 35,
+        'recipients' => 80,
+        'upload_date' => 25,
+        'due_date' => 25,
+        'status' => 35
+    );
 
-    // Add table headers
-    $pdf->SetFillColor(52, 152, 219); // Blue header
+    // Table Headers
+    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->SetFillColor(52, 152, 219);
     $pdf->SetTextColor(255);
-    $pdf->SetDrawColor(52, 152, 219);
-    $pdf->SetLineWidth(.3);
-    $pdf->SetFont('', 'B');
+    
+    $pdf->Cell($colWidths['id'], 8, 'ID', 1, 0, 'C', true);
+    $pdf->Cell($colWidths['document'], 8, 'Document Name', 1, 0, 'C', true);
+    $pdf->Cell($colWidths['sender'], 8, 'Sender', 1, 0, 'C', true);
+    $pdf->Cell($colWidths['recipients'], 8, 'Recipients', 1, 0, 'C', true);
+    $pdf->Cell($colWidths['upload_date'], 8, 'Upload Date', 1, 0, 'C', true);
+    $pdf->Cell($colWidths['due_date'], 8, 'Due Date', 1, 0, 'C', true);
+    $pdf->Cell($colWidths['status'], 8, 'Status', 1, 1, 'C', true);
 
-    $pdf->Cell(15, 7, 'ID', 1, 0, 'C', true);
-    $pdf->Cell(40, 7, 'Document', 1, 0, 'C', true);
-    $pdf->Cell(30, 7, 'Sender', 1, 0, 'C', true);
-    $pdf->Cell(30, 7, 'Recipient', 1, 0, 'C', true);
-    $pdf->Cell(25, 7, 'Upload Date', 1, 0, 'C', true);
-    $pdf->Cell(25, 7, 'Signed Date', 1, 0, 'C', true);
-    $pdf->Cell(25, 7, 'Status', 1, 0, 'C', true);
-    $pdf->Ln();
-
-    // Reset colors and font
-    $pdf->SetFillColor(224, 235, 255);
+    $pdf->SetFillColor(245, 245, 245);
     $pdf->SetTextColor(0);
-    $pdf->SetFont('');
+    $pdf->SetFont('Arial', '', 8);
 
-    // Data
     $fill = false;
     foreach ($documents as $doc) {
         if (empty($selected_docs) || in_array($doc['id'], $selected_docs)) {
-            $pdf->Cell(15, 6, $doc['id'], 'LR', 0, 'L', $fill);
-            $pdf->Cell(40, 6, (strlen(basename($doc['file_path'])) > 15 ? substr(basename($doc['file_path']), 0, 15) . '...' . '.pdf' : basename($doc['file_path'])), 'LR', 0, 'L', $fill);
-            $pdf->Cell(30, 6, $doc['sender_name'], 'LR', 0, 'L', $fill);
-            $pdf->Cell(30, 6, $doc['recipient_name'], 'LR', 0, 'L', $fill);
-            $pdf->Cell(25, 6, date('y-m-d H:i', strtotime($doc['upload_date'])), 'LR', 0, 'L', $fill);
-            $pdf->Cell(25, 6, $doc['signed_at'] ? date('y-m-d H:i', strtotime($doc['signed_at'])) : 'N/A', 'LR', 0, 'L', $fill);
-            $pdf->Cell(25, 6, $doc['status'], 'LR', 0, 'L', $fill);
-            $pdf->Ln();
+            // Prepare recipients text
+            $recipients = '';
+            for ($i = 1; $i <= $doc['total_recipients']; $i++) {
+                if (!empty($doc["recipient{$i}_name"])) {
+                    $recipientStatus = '';
+                    if ($doc['status'] === 'completed' || $i < $doc['current_recipient']) {
+                        $recipientStatus = '[Signed] ';
+                    } elseif ($i == $doc['current_recipient']) {
+                        $recipientStatus = '[Pending] ';
+                    } else {
+                        $recipientStatus = '[Awaiting] ';
+                    }
+                    $recipients .= "Recipient $i " . $recipientStatus . 
+                                 $doc["recipient{$i}_name"] . 
+                                 " (" . $doc["recipient{$i}_email"] . ")\n";
+                }
+            }
+            $recipients = rtrim($recipients);
+
+            $lineCount = count(explode("\n", $recipients));
+            $rowHeight = max(6, $lineCount * 5);
+
+            if ($pdf->CheckPageBreak($rowHeight)) {
+                $pdf->SetFont('Arial', 'B', 9);
+                $pdf->SetFillColor(52, 152, 219);
+                $pdf->SetTextColor(255);
+                $pdf->Cell($colWidths['id'], 8, 'ID', 1, 0, 'C', true);
+                $pdf->Cell($colWidths['document'], 8, 'Document Name', 1, 0, 'C', true);
+                $pdf->Cell($colWidths['sender'], 8, 'Sender', 1, 0, 'C', true);
+                $pdf->Cell($colWidths['recipients'], 8, 'Recipients', 1, 0, 'C', true);
+                $pdf->Cell($colWidths['upload_date'], 8, 'Upload Date', 1, 0, 'C', true);
+                $pdf->Cell($colWidths['due_date'], 8, 'Due Date', 1, 0, 'C', true);
+                $pdf->Cell($colWidths['status'], 8, 'Status', 1, 1, 'C', true);
+                $pdf->SetFillColor(245, 245, 245);
+                $pdf->SetTextColor(0);
+                $pdf->SetFont('Arial', '', 8);
+            }
+
+            $startY = $pdf->GetY();
+
+            $pdf->Cell($colWidths['id'], $rowHeight, $doc['id'], 1, 0, 'L', $fill);
+            $pdf->Cell($colWidths['document'], $rowHeight, basename($doc['file_path']), 1, 0, 'L', $fill);
+            $pdf->Cell($colWidths['sender'], $rowHeight, $doc['sender_name'], 1, 0, 'L', $fill);
+
+            $currentX = $pdf->GetX();
+            $currentY = $pdf->GetY();
+
+            $pdf->MultiLineCell($colWidths['recipients'], 5, $recipients, 1, 'L', $fill);
+            
+            $pdf->SetXY($currentX + $colWidths['recipients'], $currentY);
+
+            $pdf->Cell($colWidths['upload_date'], $rowHeight, date('y-m-d H:i', strtotime($doc['upload_date'])), 1, 0, 'L', $fill);
+            $pdf->Cell($colWidths['due_date'], $rowHeight, $doc['due_date'] ?? 'N/A', 1, 0, 'L', $fill);
+
+            $status_text = ucfirst($doc['status']);
+            if ($doc['status'] == 'partially_signed') {
+                $status_text .= " (" . ($doc['current_recipient'] - 1) . "/{$doc['total_recipients']})";
+            }
+            $pdf->Cell($colWidths['status'], $rowHeight, $status_text, 1, 1, 'L', $fill);
+
             $fill = !$fill;
         }
     }
-    $pdf->Cell(190, 0, '', 'T');
 
-    $pdf->Output('D', 'document_report.pdf');
+    $pdf->Output('D', 'document_report_' . date('Y-m-d_H-i') . '.pdf');
     exit;
 }
 
-// If we're not generating a PDF, we can output the buffered content
 ob_end_flush();
 ?>
 
@@ -215,42 +276,6 @@ ob_end_flush();
                     colors: {
                         primary: {"50":"#eff6ff","100":"#dbeafe","200":"#bfdbfe","300":"#93c5fd","400":"#60a5fa","500":"#3b82f6","600":"#2563eb","700":"#1d4ed8","800":"#1e40af","900":"#1e3a8a","950":"#172554"}
                     }
-                },
-                fontFamily: {
-                    'body': [
-                        'Inter', 
-                        'ui-sans-serif', 
-                        'system-ui', 
-                        '-apple-system', 
-                        'system-ui', 
-                        'Segoe UI', 
-                        'Roboto', 
-                        'Helvetica Neue', 
-                        'Arial', 
-                        'Noto Sans', 
-                        'sans-serif', 
-                        'Apple Color Emoji', 
-                        'Segoe UI Emoji', 
-                        'Segoe UI Symbol', 
-                        'Noto Color Emoji'
-                    ],
-                    'sans': [
-                        'Inter', 
-                        'ui-sans-serif', 
-                        'system-ui', 
-                        '-apple-system', 
-                        'system-ui', 
-                        'Segoe UI', 
-                        'Roboto', 
-                        'Helvetica Neue', 
-                        'Arial', 
-                        'Noto Sans', 
-                        'sans-serif', 
-                        'Apple Color Emoji', 
-                        'Segoe UI Emoji', 
-                        'Segoe UI Symbol', 
-                        'Noto Color Emoji'
-                    ]
                 }
             }
         }
@@ -261,75 +286,75 @@ ob_end_flush();
         <div class="p-4 border-2 border-gray-200 border-dashed rounded-lg dark:border-gray-700 animate-fadeIn">
             <h1 class="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Reports</h1>
             
-                <!-- Filter Form -->
-                <form method="post" class="mb-6 bg-white dark:bg-gray-800 p-5 rounded-lg shadow-lg animate-slideDown">
-                    <div class="mb-3">
-                        <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Filter Documents</h2>
-                        <div class="w-full h-0.5 bg-blue-500 mb-4"></div>
+            <!-- Filter Form -->
+            <form method="post" class="mb-6 bg-white dark:bg-gray-800 p-5 rounded-lg shadow-lg animate-slideDown">
+                <div class="mb-3">
+                    <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Filter Documents</h2>
+                    <div class="w-full h-0.5 bg-blue-500 mb-4"></div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="space-y-1">
+                        <label for="start_date" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            <i class="fas fa-calendar-alt mr-1"></i>Start Date
+                        </label>
+                        <input type="date" id="start_date" name="start_date" value="<?php echo $start_date; ?>" 
+                               class="mt-1 block w-full p-2 rounded-md border border-gray-300 shadow-sm 
+                               focus:border-blue-500 focus:ring focus:ring-blue-200 
+                               dark:bg-gray-700 dark:border-gray-600 dark:text-white 
+                               text-sm transition duration-300">
                     </div>
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="space-y-1">
-                            <label for="start_date" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                <i class="fas fa-calendar-alt mr-1"></i>Start Date
-                            </label>
-                            <input type="date" id="start_date" name="start_date" value="<?php echo $start_date; ?>" 
-                                class="mt-1 block w-full p-2 rounded-md border border-gray-300 shadow-sm 
-                                focus:border-blue-500 focus:ring focus:ring-blue-200 
-                                dark:bg-gray-700 dark:border-gray-600 dark:text-white 
-                                text-sm transition duration-300">
-                        </div>
-                        
-                        <div class="space-y-1">
-                            <label for="end_date" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                <i class="fas fa-calendar-alt mr-1"></i>End Date
-                            </label>
-                            <input type="date" id="end_date" name="end_date" value="<?php echo $end_date; ?>" 
-                                class="mt-1 block w-full p-2 rounded-md border border-gray-300 shadow-sm 
-                                focus:border-blue-500 focus:ring focus:ring-blue-200 
-                                dark:bg-gray-700 dark:border-gray-600 dark:text-white 
-                                text-sm transition duration-300">
-                        </div>
-                        
-                        <div class="space-y-1">
-                            <label for="keyword" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                <i class="fas fa-search mr-1"></i>Keyword
-                            </label>
-                            <input type="text" id="keyword" name="keyword" value="<?php echo $keyword; ?>" 
-                                placeholder="Search documents..." 
-                                class="mt-1 block w-full p-2 rounded-md border border-gray-300 shadow-sm 
-                                focus:border-blue-500 focus:ring focus:ring-blue-200 
-                                dark:bg-gray-700 dark:border-gray-600 dark:text-white 
-                                text-sm transition duration-300">
-                        </div>
-                        
-                        <div class="space-y-1">
-                            <label for="status" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                                <i class="fas fa-filter mr-1"></i>Status
-                            </label>
-                            <select id="status" name="status" 
-                                class="mt-1 block w-full p-2 rounded-md border border-gray-300 shadow-sm 
-                                focus:border-blue-500 focus:ring focus:ring-blue-200 
-                                dark:bg-gray-700 dark:border-gray-600 dark:text-white 
-                                text-sm transition duration-300">
-                                <option value="">All Statuses</option>
-                                <option value="sent" <?php echo $status === 'sent' ? 'selected' : ''; ?>>Sent</option>
-                                <option value="pending" <?php echo $status === 'pending' ? 'selected' : ''; ?>>Pending</option>
-                                <option value="signed" <?php echo $status === 'signed' ? 'selected' : ''; ?>>Signed</option>
-                                <option value="completed" <?php echo $status === 'completed' ? 'selected' : ''; ?>>Completed</option>
-                            </select>
-                        </div>
+                    <div class="space-y-1">
+                        <label for="end_date" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            <i class="fas fa-calendar-alt mr-1"></i>End Date
+                        </label>
+                        <input type="date" id="end_date" name="end_date" value="<?php echo $end_date; ?>" 
+                               class="mt-1 block w-full p-2 rounded-md border border-gray-300 shadow-sm 
+                               focus:border-blue-500 focus:ring focus:ring-blue-200 
+                               dark:bg-gray-700 dark:border-gray-600 dark:text-white 
+                               text-sm transition duration-300">
                     </div>
                     
-                    <div class="mt-4 flex justify-end">
-                        <button type="submit" 
+                    <div class="space-y-1">
+                        <label for="keyword" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            <i class="fas fa-search mr-1"></i>Keyword
+                        </label>
+                        <input type="text" id="keyword" name="keyword" value="<?php echo $keyword; ?>" 
+                               placeholder="Search documents..." 
+                               class="mt-1 block w-full p-2 rounded-md border border-gray-300 shadow-sm 
+                               focus:border-blue-500 focus:ring focus:ring-blue-200 
+                               dark:bg-gray-700 dark:border-gray-600 dark:text-white 
+                               text-sm transition duration-300">
+                    </div>
+                    
+                    <div class="space-y-1">
+                        <label for="status" class="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                            <i class="fas fa-filter mr-1"></i>Status
+                        </label>
+                        <select id="status" name="status" 
+                                class="mt-1 block w-full p-2 rounded-md border border-gray-300 shadow-sm 
+                                focus:border-blue-500 focus:ring focus:ring-blue-200 
+                                dark:bg-gray-700 dark:border-gray-600 dark:text-white 
+                                text-sm transition duration-300">
+                            <option value="">All Statuses</option>
+                            <option value="sent" <?php echo $status === 'sent' ? 'selected' : ''; ?>>Sent</option>
+                            <option value="pending" <?php echo $status === 'pending' ? 'selected' : ''; ?>>Pending</option>
+                            <option value="partially_signed" <?php echo $status === 'partially_signed' ? 'selected' : ''; ?>>Partially Signed</option>
+                            <option value="completed" <?php echo $status === 'completed' ? 'selected' : ''; ?>>Completed</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="mt-4 flex justify-end">
+                    <button type="submit" 
                             class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-md 
                             transition duration-300 ease-in-out focus:outline-none focus:ring-2 
                             focus:ring-blue-500 focus:ring-opacity-50 text-sm">
-                            <i class="fas fa-filter mr-1"></i> Apply Filters
-                        </button>
-                    </div>
-                </form>
+                        <i class="fas fa-filter mr-1"></i> Apply Filters
+                    </button>
+                </div>
+            </form>
 
             <!-- Documents Table -->
             <form method="post" id="reportForm">
@@ -351,9 +376,9 @@ ob_end_flush();
                                 <th scope="col" class="py-3 px-6">ID</th>
                                 <th scope="col" class="py-3 px-6">Document Name</th>
                                 <th scope="col" class="py-3 px-6">Sender</th>
-                                <th scope="col" class="py-3 px-6">Recipient</th>
+                                <th scope="col" class="py-3 px-6">Recipients</th>
                                 <th scope="col" class="py-3 px-6">Upload Date</th>
-                                <th scope="col" class="py-3 px-6">Signed Date</th>
+                                <th scope="col" class="py-3 px-6">Due Date</th>
                                 <th scope="col" class="py-3 px-6">Status</th>
                             </tr>
                         </thead>
@@ -362,16 +387,44 @@ ob_end_flush();
                             <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition duration-150 ease-in-out" style="animation-delay: <?php echo $index * 0.05; ?>s;">
                                 <td class="p-4 w-4">
                                     <div class="flex items-center">
-                                        <input id="checkbox-table-<?php echo $document['id']; ?>" type="checkbox" name="selected_docs[]" value="<?php echo $document['id']; ?>" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                                        <input id="checkbox-table-<?php echo $document['id']; ?>" 
+                                               type="checkbox" 
+                                               name="selected_docs[]" 
+                                               value="<?php echo $document['id']; ?>" 
+                                               class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
                                         <label for="checkbox-table-<?php echo $document['id']; ?>" class="sr-only">checkbox</label>
                                     </div>
                                 </td>
                                 <td class="py-4 px-6"><?php echo htmlspecialchars($document['id']); ?></td>
                                 <td class="py-4 px-6"><?php echo htmlspecialchars(basename($document['file_path'])); ?></td>
                                 <td class="py-4 px-6"><?php echo htmlspecialchars($document['sender_name']); ?></td>
-                                <td class="py-4 px-6"><?php echo htmlspecialchars($document['recipient_name']); ?></td>
+                                <td class="py-4 px-6">
+                                    <div class="space-y-2">
+                                        <?php for ($i = 1; $i <= $document['total_recipients']; $i++): ?>
+                                            <?php if (!empty($document["recipient{$i}_name"])): ?>
+                                                <div class="<?php echo ($i == $document['current_recipient']) ? 'font-bold' : ''; ?>">
+                                                    <span class="font-medium">
+                                                        <?php echo "Recipient $i: "; ?>
+                                                        <?php if ($document['status'] === 'completed'): ?>
+                                                            <i class="fas fa-check-circle text-green-500"></i>
+                                                        <?php elseif ($i < $document['current_recipient']): ?>
+                                                            <i class="fas fa-check-circle text-green-500"></i>
+                                                        <?php elseif ($i == $document['current_recipient'] && $document['status'] !== 'completed'): ?>
+                                                            <i class="fas fa-clock text-yellow-500"></i>
+                                                        <?php endif; ?>
+                                                    </span>
+                                                    <?php echo htmlspecialchars($document["recipient{$i}_name"]); ?>
+                                                    <br>
+                                                    <span class="text-xs text-gray-500 dark:text-gray-400">
+                                                        <?php echo htmlspecialchars($document["recipient{$i}_email"]); ?>
+                                                    </span>
+                                                </div>
+                                            <?php endif; ?>
+                                        <?php endfor; ?>
+                                    </div>
+                                </td>
                                 <td class="py-4 px-6"><?php echo date('y-m-d H:i', strtotime($document['upload_date'])); ?></td>
-                                <td class="py-4 px-6"><?php echo $document['signed_at'] ? date('y-m-d H:i', strtotime($document['signed_at'])) : 'N/A'; ?></td>
+                                <td class="py-4 px-6"><?php echo htmlspecialchars($document['due_date'] ?? 'N/A'); ?></td>
                                 <td class="py-4 px-6">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                                         <?php
@@ -382,17 +435,22 @@ ob_end_flush();
                                             case 'pending':
                                                 echo 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
                                                 break;
-                                            case 'signed':
-                                                echo 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+                                            case 'partially_signed':
+                                                echo 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
                                                 break;
                                             case 'completed':
-                                                echo 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
+                                                echo 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
                                                 break;
                                             default:
                                                 echo 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
                                         }
                                         ?>">
-                                        <?php echo ucfirst(htmlspecialchars($document['status'])); ?>
+                                        <?php 
+                                        echo ucfirst(str_replace('_', ' ', $document['status']));
+                                        if ($document['status'] == 'partially_signed') {
+                                            echo " (" . ($document['current_recipient'] - 1) . "/{$document['total_recipients']})";
+                                        }
+                                        ?>
                                     </span>
                                 </td>
                             </tr>
@@ -401,7 +459,10 @@ ob_end_flush();
                     </table>
                 </div>
                 <div class="mt-6 flex justify-end">
-                    <button type="submit" name="generate_pdf" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
+                    <button type="submit" name="generate_pdf" 
+                            class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg 
+                                   transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105 
+                                   focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">
                         <i class="fas fa-file-pdf mr-2"></i> Generate PDF Report
                     </button>
                 </div>
