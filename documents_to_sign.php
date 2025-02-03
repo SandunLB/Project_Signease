@@ -57,6 +57,7 @@ $result = $stmt->get_result();
                     <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                         <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                             <tr>
+                                <th scope="col" class="py-3 px-6">Document ID</th>
                                 <th scope="col" class="py-3 px-6">Sender</th>
                                 <th scope="col" class="py-3 px-6">Document</th>
                                 <th scope="col" class="py-3 px-6">Upload Date & Time</th>
@@ -90,6 +91,9 @@ $result = $stmt->get_result();
                                 $document_to_show = !empty($row['signed_file_path']) ? $row['signed_file_path'] : $row['file_path'];
                             ?>
                                 <tr class="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                    <td class="py-4 px-6 font-medium text-gray-900 dark:text-white">
+                                        <?php echo htmlspecialchars($row['id']); ?>
+                                    </td>
                                     <td class="py-4 px-6">
                                         <?php echo htmlspecialchars($row['sender_name']); ?><br>
                                         <span class="text-xs text-gray-500 dark:text-gray-400">

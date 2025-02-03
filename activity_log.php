@@ -53,13 +53,14 @@ $sent_sql = "SELECT d.id, d.file_path, d.signed_file_path, d.drive_link, d.requi
              AND (r1.name LIKE ? OR r1.email LIKE ? OR 
                   r2.name LIKE ? OR r2.email LIKE ? OR 
                   r3.name LIKE ? OR r3.email LIKE ? OR 
-                  d.status LIKE ?)
+                  d.status LIKE ? OR
+                  d.id LIKE ?)
              ORDER BY d.upload_date DESC";
 
 $sent_stmt = $conn->prepare($sent_sql);
 $searchParam = "%$search%";
-$sent_stmt->bind_param("isssssss", $user_id, $searchParam, $searchParam, $searchParam, 
-                      $searchParam, $searchParam, $searchParam, $searchParam);
+$sent_stmt->bind_param("issssssss", $user_id, $searchParam, $searchParam, $searchParam, 
+                      $searchParam, $searchParam, $searchParam, $searchParam, $searchParam);
 $sent_stmt->execute();
 $sent_result = $sent_stmt->get_result();
 
@@ -121,7 +122,7 @@ function getStatusClass($status) {
                         <input 
                             type="text" 
                             name="search" 
-                            placeholder="Search by recipient or status..." 
+                            placeholder="Search by recipient, status, or Document ID..." 
                             value="<?php echo htmlspecialchars($search); ?>"
                             class="bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg py-2 px-4 pr-10 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white w-64"
                         >
@@ -141,6 +142,7 @@ function getStatusClass($status) {
                 <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
                     <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
                         <tr>
+                            <th scope="col" class="py-3 px-6">Document ID</th>
                             <th scope="col" class="py-3 px-6">Recipients</th>
                             <th scope="col" class="py-3 px-6">Document</th>
                             <th scope="col" class="py-3 px-6">Upload Date</th>
@@ -161,6 +163,9 @@ function getStatusClass($status) {
                                     data-due-date="<?php echo htmlspecialchars($row['due_date']); ?>"
                                     data-current="<?php echo $row['current_recipient']; ?>"
                                     data-total="<?php echo $row['total_recipients']; ?>">
+                                    <td class="py-4 px-6 font-medium text-gray-900 dark:text-white">
+                                        <?php echo htmlspecialchars($row['id']); ?>
+                                    </td>
                                     <td class="py-4 px-6">
                                         <div class="space-y-2">
                                         <?php for ($i = 1; $i <= $row['total_recipients']; $i++): ?>
@@ -169,13 +174,10 @@ function getStatusClass($status) {
                                                     <span class="font-medium">
                                                         <?php echo "Recipient $i: "; ?>
                                                         <?php if ($row['status'] === 'completed'): ?>
-                                                            <!-- If document is completed, show check mark for all recipients -->
                                                             <i class="fas fa-check-circle text-green-500"></i>
                                                         <?php elseif ($i < $row['current_recipient']): ?>
-                                                            <!-- For recipients who have already signed -->
                                                             <i class="fas fa-check-circle text-green-500"></i>
                                                         <?php elseif ($i == $row['current_recipient'] && $row['status'] !== 'completed'): ?>
-                                                            <!-- For current recipient if document isn't completed -->
                                                             <i class="fas fa-clock text-yellow-500"></i>
                                                         <?php endif; ?>
                                                     </span>
@@ -236,7 +238,7 @@ function getStatusClass($status) {
                             <?php endwhile; ?>
                         <?php else: ?>
                             <tr class="bg-white dark:bg-gray-800">
-                                <td colspan="6" class="py-4 px-6 text-center">
+                                <td colspan="7" class="py-4 px-6 text-center">
                                     <?php if(!empty($search)): ?>
                                         No documents found matching your search.
                                     <?php else: ?>
@@ -258,7 +260,7 @@ function getStatusClass($status) {
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
             <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full dark:bg-gray-800">
                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 dark:bg-gray-800">
-                    <div class="sm:flex sm:items-start">
+                <div class="sm:flex sm:items-start">
                         <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
                             <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
                                 Document Details
@@ -306,6 +308,7 @@ function getStatusClass($status) {
                     const current = this.getAttribute('data-current');
                     const total = this.getAttribute('data-total');
                     const status = this.getAttribute('data-status');
+                    const docId = this.getAttribute('data-id');
                     
                     const docDetails = {
                         requirements: this.getAttribute('data-requirements'),
@@ -314,11 +317,13 @@ function getStatusClass($status) {
                         uploadDate: this.getAttribute('data-upload-date'),
                         dueDate: this.getAttribute('data-due-date'),
                         current: current,
-                        total: total
+                        total: total,
+                        id: docId
                     };
 
                     modalContent.innerHTML = `
                         <div class="space-y-3">
+                            <p class="dark:text-gray-300"><strong>Document ID:</strong> ${docDetails.id}</p>
                             <p class="dark:text-gray-300"><strong>Requirements:</strong> ${docDetails.requirements}</p>
                             <p class="dark:text-gray-300"><strong>Description:</strong> ${docDetails.description}</p>
                             <p class="dark:text-gray-300"><strong>Upload Date:</strong> ${docDetails.uploadDate}</p>
